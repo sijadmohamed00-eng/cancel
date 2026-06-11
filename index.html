@@ -11,22 +11,36 @@
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background: #10132a;
     color: #eee;
-    width: 160px;
+    width: 170px;
     overflow: hidden;
     user-select: none;
   }
 
   .header {
     background: linear-gradient(135deg, #1B52C4, #0d3a8a);
-    padding: 5px 7px;
+    padding: 6px 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     cursor: move;
     border-bottom: 1px solid #4A9EFF33;
+    -webkit-app-region: drag;
   }
 
-  .header-title { font-size: 10px; font-weight: 700; color: #fff; }
+  .header-title { font-size: 10px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 5px; }
+  
+  .pin-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0 3px;
+    opacity: 0.7;
+    -webkit-app-region: no-drag;
+  }
+  .pin-btn.active { opacity: 1; color: #f59e0b; }
+  .pin-btn:hover { opacity: 1; }
 
   .body {
     padding: 6px 6px 5px;
@@ -82,20 +96,20 @@
   .btn-send:active { opacity: 0.8; }
   .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .btn-report {
+  .btn-admin {
     width: 100%;
     background: transparent;
-    color: #4A9EFF;
-    border: 1px solid #4A9EFF55;
+    color: #f59e0b;
+    border: 1px solid #f59e0b55;
     border-radius: 5px;
     padding: 4px;
     font-size: 9.5px;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
+    margin-top: 3px;
   }
-
-  .btn-report:hover { background: #4A9EFF11; }
+  .btn-admin:hover { background: #f59e0b11; }
 
   .counter {
     text-align: center;
@@ -113,7 +127,6 @@
   }
   .sync-status.synced { color: #16a34a; }
   .sync-status.error { color: #ef4444; }
-  .sync-status.syncing { color: #f59e0b; }
 
   .toast {
     position: fixed;
@@ -129,34 +142,79 @@
     opacity: 0;
     transition: opacity 0.3s;
     pointer-events: none;
-    z-index: 99;
+    z-index: 9999;
   }
 
   .toast.show { opacity: 1; }
   .toast.error { background: #dc2626; }
 
   hr { border: none; border-top: 1px solid #1B52C422; margin: 2px 0; }
+  
+  /* Admin Panel */
+  .admin-panel {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #0a0e1aee;
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    padding: 15px;
+    overflow-y: auto;
+  }
+  .admin-panel.show { display: block; }
+  .admin-content {
+    background: #10132a;
+    border-radius: 12px;
+    padding: 15px;
+    max-width: 500px;
+    margin: 0 auto;
+    border: 1px solid #4A9EFF;
+  }
+  .admin-content h3 { margin-bottom: 10px; color: #4A9EFF; }
+  .admin-content button {
+    background: #1B52C4;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 5px;
+    cursor: pointer;
+  }
+  .admin-content .close-btn { background: #dc2626; }
+  .admin-password {
+    width: 100%;
+    padding: 8px;
+    margin: 10px 0;
+    background: #0a1228;
+    border: 1px solid #1B52C4;
+    border-radius: 6px;
+    color: #fff;
+  }
 </style>
 </head>
 <body>
 
 <div class="header" id="drag-handle">
-  <span class="header-title">🚫 تسجيل إلغاء</span>
-  <span style="font-size:10px">☁️</span>
+  <div class="header-title">
+    <span>🚫 تسجيل إلغاء</span>
+  </div>
+  <div>
+    <button class="pin-btn" id="pinBtn" onclick="toggleAlwaysOnTop()" title="تثبيت فوق النوافذ">📌</button>
+  </div>
 </div>
 
 <div class="body">
-
   <div>
     <label>رقم الأوردر *</label>
     <input type="text" id="order-num" placeholder="مثال: 284" inputmode="numeric">
   </div>
-
   <div>
     <label>رقم الزبون</label>
     <input type="text" id="phone-num" placeholder="07xxxxxxxxx" inputmode="tel">
   </div>
-
   <div>
     <label>الفرع *</label>
     <select id="branch">
@@ -175,7 +233,6 @@
       <option>فرع شهداء البياع</option>
     </select>
   </div>
-
   <div>
     <label>سبب الإلغاء *</label>
     <select id="reason" onchange="toggleCustom()">
@@ -191,17 +248,30 @@
       <input type="text" id="custom-reason-txt" placeholder="اكتب السبب...">
     </div>
   </div>
-
   <hr>
-
-  <button class="btn-send" id="send-btn" onclick="sendEntry()">📋 حفظ + نسخ للواتساب</button>
+  <button class="btn-send" id="send-btn" onclick="sendEntry()">📋 حفظ + نسخ</button>
   <div class="counter" id="counter">الإلغاءات اليوم: 0</div>
   <div class="sync-status" id="sync-status" onclick="syncFromCloud()">☁️ متزامن</div>
-  <button class="btn-report" onclick="openReport()">📊 فتح التقرير</button>
-
+  <button class="btn-admin" onclick="showAdminPanel()">👑 لوحة الأدمن</button>
 </div>
 
 <div class="toast" id="toast">✅ تم الحفظ والنسخ!</div>
+
+<!-- Admin Panel -->
+<div id="adminPanel" class="admin-panel">
+  <div class="admin-content">
+    <h3>👑 لوحة التحكم - الأدمن</h3>
+    <input type="password" id="adminPass" class="admin-password" placeholder="كلمة المرور">
+    <button onclick="checkAdminAndLoad()">🔓 دخول</button>
+    <div id="adminActions" style="display: none; margin-top: 15px;">
+      <button onclick="generateWordReport()">📄 تصدير تقرير Word</button>
+      <button onclick="copyAllToClipboard()">📋 نسخ كل الإلغاءات</button>
+      <button onclick="clearAllData()" style="background:#dc2626;">⚠️ حذف كل البيانات</button>
+      <hr style="margin: 10px 0;">
+      <button onclick="closeAdminPanel()" class="close-btn">❌ إغلاق</button>
+    </div>
+  </div>
+</div>
 
 <script>
   // Firebase Configuration
@@ -219,8 +289,9 @@
   firebase.initializeApp(firebaseConfig);
   const database = firebase.database();
   
-  const STORAGE_KEY = 'cancel_entries_v3';
+  const STORAGE_KEY = 'cancel_entries_final';
   let currentEntries = [];
+  let isPinned = false;
   
   function getTodayKey() {
     const d = new Date();
@@ -249,12 +320,11 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
       currentEntries = entries;
       sessionStorage.setItem('current_cancel_entries', JSON.stringify(entries));
-    } catch {}
+    } catch (e) { console.error('Save local error:', e); }
   }
   
   function updateCounter() {
     document.getElementById('counter').textContent = `الإلغاءات اليوم: ${currentEntries.length}`;
-    sessionStorage.setItem('current_cancel_entries', JSON.stringify(currentEntries));
   }
   
   function showToast(msg, isError = false) {
@@ -266,7 +336,7 @@
     setTimeout(() => {
       t.classList.remove('show');
       if (!isError) t.textContent = '✅ تم الحفظ والنسخ!';
-    }, 2200);
+    }, 2000);
   }
   
   function updateSyncStatus(status) {
@@ -281,6 +351,27 @@
       statusEl.classList.remove('synced');
     }
   }
+  
+  // Always on Top
+  window.toggleAlwaysOnTop = function() {
+    isPinned = !isPinned;
+    const pinBtn = document.getElementById('pinBtn');
+    if (isPinned) {
+      pinBtn.classList.add('active');
+      pinBtn.textContent = '📍';
+      showToast('📌 تم التثبيت', false);
+      // Create a standalone always-on-top window
+      const win = window.open(window.location.href, 'CancelApp', 
+        'width=200,height=480,toolbar=no,menubar=no,location=no,status=no');
+      if (win) {
+        win.focus();
+        showToast('🪨 تم فتح نافذة منفصلة', false);
+      }
+    } else {
+      pinBtn.classList.remove('active');
+      pinBtn.textContent = '📌';
+    }
+  };
   
   // Listen to realtime updates
   function listenToRealtimeUpdates() {
@@ -320,8 +411,6 @@
   }
   
   window.syncFromCloud = async function() {
-    updateSyncStatus('syncing');
-    
     try {
       const todayPath = getTodayPath();
       const snapshot = await database.ref(todayPath).once('value');
@@ -347,11 +436,11 @@
       currentEntries = mergedEntries;
       updateCounter();
       updateSyncStatus('synced');
-      showToast('✅ تمت المزامنة مع السحابة', false);
+      showToast('✅ تمت المزامنة', false);
     } catch (err) {
       console.error('Sync error:', err);
       updateSyncStatus('error');
-      showToast('⚠️ فشل الاتصال بالسحابة', true);
+      showToast('⚠️ فشل الاتصال', true);
     }
   };
   
@@ -384,7 +473,7 @@
       : sel.value;
   
     if (!order || !branch || !reason) {
-      showToast('⚠️ رقم الأوردر والفرع والسبب مطلوبة', true);
+      showToast('⚠️ الأوردر والفرع والسبب مطلوبة', true);
       return;
     }
   
@@ -403,31 +492,44 @@
   
     const btn = document.getElementById('send-btn');
     const originalText = btn.textContent;
-    btn.textContent = '⏳ جاري الحفظ...';
+    btn.textContent = '⏳ جاري...';
     btn.disabled = true;
   
     try {
+      // Add to local
       const newEntries = [...currentEntries, entry];
       saveLocal(newEntries);
       currentEntries = newEntries;
       updateCounter();
       
+      // Upload to Firebase
       const uploaded = await uploadEntryToFirebase(entry);
       
       if (!uploaded) {
         updateSyncStatus('error');
-        showToast('⚠️ تم الحفظ محلياً (لا يوجد اتصال)', true);
+        showToast('⚠️ تم الحفظ محلياً', true);
       } else {
         updateSyncStatus('synced');
       }
       
+      // Copy to clipboard
       const msg = `🚫 إلغاء أوردر\n📦 رقم الأوردر: ${order}\n${phone ? `📞 رقم الزبون: ${phone}\n` : ''}🏪 الفرع: ${branch}\n❌ السبب: ${reason}\n⏰ الوقت: ${timeStr}`;
       
-      await navigator.clipboard.writeText(msg);
+      try {
+        await navigator.clipboard.writeText(msg);
+        showToast(`✅ تم الحفظ والنسخ`, false);
+      } catch (clipErr) {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = msg;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast(`✅ تم الحفظ والنسخ`, false);
+      }
       
-      const syncMsg = uploaded ? '' : ' (حفظ محلي فقط)';
-      showToast(`✅ تم الحفظ والنسخ${syncMsg}`, !uploaded);
-      
+      // Reset form
       document.getElementById('order-num').value = '';
       document.getElementById('phone-num').value = '';
       document.getElementById('branch').value = '';
@@ -438,17 +540,146 @@
       
     } catch (err) {
       console.error('Send error:', err);
-      showToast('❌ فشل الحفظ', true);
+      showToast('❌ فشل الحفظ: ' + err.message, true);
     } finally {
       btn.textContent = originalText;
       btn.disabled = false;
     }
   };
   
-  window.openReport = function() {
-    sessionStorage.setItem('current_cancel_entries', JSON.stringify(currentEntries));
-    sessionStorage.setItem('report_date', getTodayKey());
-    window.open('report.html', '_blank', 'width=900,height=700');
+  // Admin Functions
+  window.showAdminPanel = function() {
+    document.getElementById('adminPanel').classList.add('show');
+  };
+  
+  window.closeAdminPanel = function() {
+    document.getElementById('adminPanel').classList.remove('show');
+    document.getElementById('adminActions').style.display = 'none';
+    document.getElementById('adminPass').value = '';
+  };
+  
+  window.checkAdminAndLoad = function() {
+    const pass = document.getElementById('adminPass').value;
+    // كلمة المرور: admin123
+    if (pass === 'admin123') {
+      document.getElementById('adminActions').style.display = 'block';
+      showToast('✅ مرحباً أيها الأدمن', false);
+    } else {
+      showToast('❌ كلمة المرور غير صحيحة', true);
+    }
+  };
+  
+  // Generate Word Report
+  window.generateWordReport = function() {
+    if (currentEntries.length === 0) {
+      showToast('لا توجد بيانات للتصدير', true);
+      return;
+    }
+    
+    // Group by branch
+    const grouped = {};
+    currentEntries.forEach(entry => {
+      if (!grouped[entry.branch]) grouped[entry.branch] = [];
+      grouped[entry.branch].push(entry);
+    });
+    
+    const today = getTodayKey();
+    const dateStr = new Date().toLocaleDateString('ar-IQ');
+    
+    let fullHtml = `<!DOCTYPE html>
+      <html dir="rtl">
+      <head><meta charset="UTF-8"><title>تقرير الإلغاءات - ${today}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: white; color: black; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #1B52C4; }
+        .branch-section { margin-bottom: 40px; page-break-inside: avoid; }
+        .branch-title { background: #1B52C4; color: white; padding: 10px; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #f2f2f2; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+      </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>📊 تقرير الإلغاءات</h1>
+          <p>شركة عصر الشرق - قسم خدمة العملاء</p>
+          <p>التاريخ: ${dateStr}</p>
+        </div>`;
+    
+    for (const [branch, branchEntries] of Object.entries(grouped)) {
+      fullHtml += `
+        <div class="branch-section">
+          <div class="branch-title">
+            <h3>🏪 ${branch}</h3>
+            <p>عدد الإلغاءات: ${branchEntries.length}</p>
+          </div>
+          <table>
+            <thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>سبب الإلغاء</th><th>الوقت</th></tr></thead>
+            <tbody>`;
+      branchEntries.forEach((entry, idx) => {
+        fullHtml += `<tr><td>${idx + 1}</td><td>${entry.order}</td><td dir="ltr">${entry.phone || '—'}</td><td>${entry.reason}</td><td>${entry.time}</td></tr>`;
+      });
+      fullHtml += `</tbody></table></div>`;
+    }
+    
+    fullHtml += `<div class="footer"><p>إجمالي الإلغاءات: ${currentEntries.length}</p><p>تم التصدير بتاريخ: ${new Date().toLocaleString('ar-IQ')}</p></div></body></html>`;
+    
+    const blob = new Blob([fullHtml], { type: 'application/msword' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `تقرير_الإلغاءات_${today}.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('✅ تم تصدير التقرير', false);
+  };
+  
+  window.copyAllToClipboard = function() {
+    if (currentEntries.length === 0) {
+      showToast('لا توجد بيانات', true);
+      return;
+    }
+    
+    let text = `📊 تقرير الإلغاءات - ${getTodayKey()}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    const grouped = {};
+    currentEntries.forEach(entry => {
+      if (!grouped[entry.branch]) grouped[entry.branch] = [];
+      grouped[entry.branch].push(entry);
+    });
+    
+    for (const [branch, entries] of Object.entries(grouped)) {
+      text += `🏪 ${branch}\n`;
+      text += `┌─────┬──────────┬────────────────┬──────────────┐\n`;
+      text += `│  #  │ الأوردر  │   رقم الزبون   │    السبب     │\n`;
+      text += `├─────┼──────────┼────────────────┼──────────────┤\n`;
+      entries.forEach((entry, idx) => {
+        const phone = (entry.phone || '—').padEnd(14);
+        text += `│ ${(idx+1).toString().padEnd(3)} │ ${entry.order.padEnd(8)} │ ${phone} │ ${entry.reason.padEnd(12)} │\n`;
+      });
+      text += `└─────┴──────────┴────────────────┴──────────────┘\n\n`;
+    }
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📦 إجمالي الإلغاءات: ${currentEntries.length}\n📅 التاريخ: ${new Date().toLocaleDateString('ar-IQ')}\n`;
+    
+    navigator.clipboard.writeText(text);
+    showToast('✅ تم نسخ كل الإلغاءات', false);
+  };
+  
+  window.clearAllData = function() {
+    if (confirm('⚠️ تحذير: هل أنت متأكد من حذف كل بيانات اليوم؟')) {
+      saveLocal([]);
+      currentEntries = [];
+      updateCounter();
+      const todayPath = getTodayPath();
+      database.ref(todayPath).remove().then(() => {
+        showToast('✅ تم حذف كل البيانات', false);
+      }).catch(() => {
+        showToast('⚠️ تم الحذف محلياً فقط', true);
+      });
+    }
   };
   
   // Initialize
@@ -458,13 +689,13 @@
   setTimeout(() => window.syncFromCloud(), 2000);
   
   window.addEventListener('online', () => {
-    showToast('🌐 تم الاتصال بالإنترنت، جاري المزامنة', false);
+    showToast('🌐 تم الاتصال بالإنترنت', false);
     window.syncFromCloud();
   });
   
   window.addEventListener('offline', () => {
     updateSyncStatus('error');
-    showToast('⚠️ لا يوجد اتصال بالإنترنت - سيتم الحفظ محلياً', true);
+    showToast('⚠️ لا يوجد اتصال بالإنترنت', true);
   });
 </script>
 
