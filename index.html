@@ -3,18 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الإلغاءات - مزامنة فورية</title>
+<title>تسجيل الإلغاءات</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B52C4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="إلغاءات">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background: #10132a;
     color: #eee;
-    width: 200px;
+    width: 204px;
     height: auto;
     overflow: hidden;
     user-select: none;
   }
+
+  /* ── SVG icon helper ── */
+  .ic { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ic svg { display: block; }
+
+  /* ── Header ── */
   .header {
     background: linear-gradient(135deg, #1B52C4, #0d3a8a);
     padding: 6px 8px;
@@ -22,24 +33,48 @@
     align-items: center;
     justify-content: space-between;
     cursor: move;
+    gap: 6px;
   }
-  .header-title { font-size: 10px; font-weight: 700; }
+  .header-left { display: flex; align-items: center; gap: 5px; }
+  .header-title { font-size: 10px; font-weight: 700; color: #fff; }
   .header-btns { display: flex; gap: 4px; align-items: center; }
+
+  /* Install button */
+  .btn-install {
+    display: none;
+    background: #4A9EFF22;
+    border: 1px solid #4A9EFF66;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 8px;
+    font-weight: 600;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-install:hover { background: #4A9EFF44; }
+  .btn-install.visible { display: flex; }
+
   .pin-btn {
     background: transparent;
     border: none;
     color: #fff;
     cursor: pointer;
-    font-size: 11px;
     line-height: 1;
-    padding: 1px 3px;
+    padding: 2px 3px;
     border-radius: 3px;
     transition: background 0.2s;
+    display: flex; align-items: center;
   }
   .pin-btn.active { background: #4A9EFF44; }
   .pin-btn:hover { background: #ffffff22; }
+
+  /* ── Body ── */
   .body { padding: 6px; display: flex; flex-direction: column; gap: 4px; }
-  label { font-size: 9px; color: #4A9EFF; display: block; margin-bottom: 1px; }
+  label { font-size: 9px; color: #4A9EFF; display: flex; align-items: center; gap: 3px; margin-bottom: 1px; }
   input, select {
     width: 100%;
     background: #0a1228;
@@ -51,8 +86,11 @@
     font-family: inherit;
     direction: rtl;
   }
+  input:focus, select:focus { outline: none; border-color: #4A9EFF88; }
   .custom-reason { display: none; margin-top: 3px; }
   .custom-reason.visible { display: block; }
+
+  /* ── Buttons ── */
   .btn-send {
     width: 100%;
     background: linear-gradient(135deg, #1B52C4, #4A9EFF);
@@ -64,20 +102,10 @@
     font-weight: bold;
     cursor: pointer;
     margin-top: 3px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
   }
-  .btn-restore {
-    width: 100%;
-    background: transparent;
-    color: #22c55e;
-    border: 1px solid #22c55e55;
-    border-radius: 5px;
-    padding: 5px;
-    font-size: 9px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 2px;
-  }
-  .btn-restore:hover { background: #22c55e22; }
+  .btn-send:hover { filter: brightness(1.1); }
+
   .btn-admin {
     width: 100%;
     background: transparent;
@@ -88,204 +116,233 @@
     font-size: 9px;
     cursor: pointer;
     margin-top: 3px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
   }
-  .counter {
-    text-align: center;
-    font-size: 9px;
-    color: #4A9EFF99;
-    padding: 2px 0;
-  }
-  .sync-status {
-    text-align: center;
-    font-size: 8px;
-    cursor: pointer;
-    padding: 2px 0;
-  }
+
+  .counter { text-align: center; font-size: 9px; color: #4A9EFF99; padding: 2px 0; }
+
+  .sync-status { text-align: center; font-size: 8px; cursor: pointer; padding: 2px 0;
+    display: flex; align-items: center; justify-content: center; gap: 3px; }
   .sync-status.synced { color: #16a34a; }
-  .sync-status.error { color: #ef4444; }
-  .sync-status.syncing { color: #f59e0b; }
+  .sync-status.error  { color: #ef4444; }
+  .sync-status.syncing{ color: #f59e0b; }
+
   .toast {
-    position: fixed;
-    bottom: 5px;
-    left: 4px;
-    right: 4px;
-    background: #16a34a;
-    font-size: 9px;
-    text-align: center;
-    padding: 4px;
-    border-radius: 5px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    z-index: 9999;
+    position: fixed; bottom: 5px; left: 4px; right: 4px;
+    background: #16a34a; font-size: 9px; text-align: center;
+    padding: 4px; border-radius: 5px; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none; z-index: 9999;
   }
   .toast.show { opacity: 1; }
   .toast.error { background: #dc2626; }
+
   hr { margin: 3px 0; border: none; border-top: 1px solid #1B52C422; }
 
-  /* Restore Panel */
+  /* ── Restore ── */
   .restore-section {
-    background: #0a1a0e;
-    border: 1px solid #22c55e33;
-    border-radius: 6px;
-    padding: 6px;
-    margin-top: 2px;
+    background: #0a1a0e; border: 1px solid #22c55e33;
+    border-radius: 6px; padding: 6px; margin-top: 2px;
   }
   .restore-section label { color: #22c55e; }
   .restore-row { display: flex; gap: 4px; margin-top: 4px; }
-  .restore-row input { flex: 1; }
-  .restore-row select { flex: 1; }
+  .restore-row input, .restore-row select { flex: 1; }
   .btn-do-restore {
-    width: 100%;
-    background: #22c55e;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    padding: 5px;
-    font-size: 9px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 4px;
+    width: 100%; background: #22c55e; color: #fff; border: none;
+    border-radius: 5px; padding: 5px; font-size: 9px; font-weight: bold;
+    cursor: pointer; margin-top: 4px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
   }
 
-  /* Admin Panel */
+  /* ── Admin Panel ── */
   .admin-panel {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: #0a0e1aee;
-    backdrop-filter: blur(5px);
-    z-index: 10000;
-    padding: 15px;
+    display: none; position: fixed; top:0;left:0;right:0;bottom:0;
+    background: #0a0e1aee; backdrop-filter: blur(5px); z-index: 10000; padding: 15px;
   }
   .admin-panel.show { display: block; }
-  .admin-content {
-    background: #10132a;
-    border-radius: 12px;
-    padding: 15px;
-    border: 1px solid #4A9EFF;
-  }
-  .admin-content h3 { margin-bottom: 10px; color: #4A9EFF; font-size: 14px; }
+  .admin-content { background: #10132a; border-radius: 12px; padding: 15px; border: 1px solid #4A9EFF; }
+  .admin-content h3 { margin-bottom: 10px; color: #4A9EFF; font-size: 13px;
+    display: flex; align-items: center; gap: 6px; }
   .admin-content button {
-    background: #1B52C4;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 10px;
-    margin: 3px;
-    cursor: pointer;
-    font-size: 11px;
+    background: #1B52C4; color: #fff; border: none; border-radius: 6px;
+    padding: 6px 10px; margin: 3px; cursor: pointer; font-size: 11px;
+    display: inline-flex; align-items: center; gap: 5px;
   }
   .admin-content .close-btn { background: #dc2626; }
   .admin-password {
-    width: 100%;
-    padding: 6px;
-    margin: 8px 0;
-    background: #0a1228;
-    border: 1px solid #1B52C4;
-    border-radius: 6px;
-    color: #fff;
+    width: 100%; padding: 6px; margin: 8px 0;
+    background: #0a1228; border: 1px solid #1B52C4; border-radius: 6px; color: #fff;
   }
 </style>
 </head>
 <body>
 
+<!-- ══ HEADER ══ -->
 <div class="header" id="drag-handle">
-  <div class="header-title">🚫 تسجيل إلغاء</div>
+  <div class="header-left">
+    <!-- X icon -->
+    <span class="ic">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#ff4d4d" stroke-width="2.2"/>
+        <line x1="8" y1="8" x2="16" y2="16" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="16" y1="8" x2="8" y2="16" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <span class="header-title">تسجيل إلغاء</span>
+  </div>
   <div class="header-btns">
-    <button class="pin-btn" id="pin-btn" onclick="toggleAlwaysOnTop()" title="دائماً في المقدمة">📌</button>
+    <!-- Install button (shows when PWA installable) -->
+    <button class="btn-install" id="btn-install" onclick="installPWA()">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3v13M7 11l5 5 5-5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 20h16" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      تثبيت
+    </button>
+    <!-- Pin button -->
+    <button class="pin-btn" id="pin-btn" onclick="toggleAlwaysOnTop()" title="فتح نافذة منفصلة">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" id="pin-icon">
+        <path d="M12 2L12 14M8 6l4-4 4 4M5 21l7-7 7 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="17" r="2" fill="#4A9EFF"/>
+      </svg>
+    </button>
   </div>
 </div>
 
+<!-- ══ BODY ══ -->
 <div class="body">
+
   <div>
-    <label>رقم الأوردر *</label>
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#4A9EFF" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/></svg>
+      رقم الأوردر *
+    </label>
     <input type="text" id="order-num" placeholder="مثال: 284">
   </div>
+
   <div>
-    <label>رقم الزبون</label>
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="3" stroke="#4A9EFF" stroke-width="2"/><circle cx="12" cy="17" r="1.2" fill="#4A9EFF"/></svg>
+      رقم الزبون
+    </label>
     <input type="text" id="phone-num" placeholder="07xxxxxxxxx">
   </div>
+
   <div>
-    <label>الفرع *</label>
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#4A9EFF" stroke-width="2"/></svg>
+      الفرع *
+    </label>
     <select id="branch">
       <option value="">— اختر الفرع —</option>
-      <option>فرع الشعب</option>
-      <option>فرع البنوك</option>
-      <option>فرع الغدير</option>
-      <option>فرع الحرية</option>
-      <option>فرع الدورة</option>
-      <option>فرع بسماية</option>
-      <option>فرع الغزالية</option>
-      <option>فرع الأعظمية</option>
-      <option>فرع حي العامل</option>
-      <option>فرع البوعيثة</option>
-      <option>فرع حي الجهاد</option>
-      <option>فرع شهداء البياع</option>
+      <option>فرع الشعب</option><option>فرع البنوك</option>
+      <option>فرع الغدير</option><option>فرع الحرية</option>
+      <option>فرع الدورة</option><option>فرع بسماية</option>
+      <option>فرع الغزالية</option><option>فرع الأعظمية</option>
+      <option>فرع حي العامل</option><option>فرع البوعيثة</option>
+      <option>فرع حي الجهاد</option><option>فرع شهداء البياع</option>
     </select>
   </div>
+
   <div>
-    <label>سبب الإلغاء *</label>
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#4A9EFF" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/><line x1="15" y1="9" x2="9" y2="15" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/></svg>
+      سبب الإلغاء *
+    </label>
     <select id="reason" onchange="toggleCustom()">
       <option value="">— اختر السبب —</option>
-      <option>زبون</option>
-      <option>تكرار</option>
-      <option>تحويل</option>
-      <option>عدم رد</option>
+      <option>زبون</option><option>تكرار</option>
+      <option>تحويل</option><option>عدم رد</option>
       <option>خارج الزون</option>
-      <option value="مخصص">مخصص ✏️</option>
+      <option value="مخصص">مخصص</option>
     </select>
     <div class="custom-reason" id="custom-wrap">
       <input type="text" id="custom-reason-txt" placeholder="اكتب السبب...">
     </div>
   </div>
-  <hr>
-  <button class="btn-send" onclick="sendEntry()">📋 حفظ + نسخ</button>
 
-  <!-- Restore Section -->
   <hr>
-  <div class="restore-section" id="restore-section">
-    <label>♻️ استرجاع طلب ملغي</label>
+  <button class="btn-send" onclick="sendEntry()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    حفظ + نسخ
+  </button>
+
+  <!-- ══ Restore ══ -->
+  <hr>
+  <div class="restore-section">
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 3v6h6" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      استرجاع طلب ملغي
+    </label>
     <div class="restore-row">
       <input type="text" id="restore-order" placeholder="رقم الأوردر">
       <select id="restore-branch">
         <option value="">الفرع</option>
-        <option>فرع الشعب</option>
-        <option>فرع البنوك</option>
-        <option>فرع الغدير</option>
-        <option>فرع الحرية</option>
-        <option>فرع الدورة</option>
-        <option>فرع بسماية</option>
-        <option>فرع الغزالية</option>
-        <option>فرع الأعظمية</option>
-        <option>فرع حي العامل</option>
-        <option>فرع البوعيثة</option>
-        <option>فرع حي الجهاد</option>
-        <option>فرع شهداء البياع</option>
+        <option>فرع الشعب</option><option>فرع البنوك</option>
+        <option>فرع الغدير</option><option>فرع الحرية</option>
+        <option>فرع الدورة</option><option>فرع بسماية</option>
+        <option>فرع الغزالية</option><option>فرع الأعظمية</option>
+        <option>فرع حي العامل</option><option>فرع البوعيثة</option>
+        <option>فرع حي الجهاد</option><option>فرع شهداء البياع</option>
       </select>
     </div>
-    <button class="btn-do-restore" onclick="restoreEntry()">♻️ استرجاع من الإلغاءات</button>
+    <button class="btn-do-restore" onclick="restoreEntry()">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 3v6h6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      استرجاع من الإلغاءات
+    </button>
   </div>
 
   <div class="counter" id="counter">الإلغاءات اليوم: 0</div>
-  <div class="sync-status" id="sync-status">☁️ جاري التحميل...</div>
-  <button class="btn-admin" onclick="showAdminPanel()">👑 لوحة الأدمن</button>
+
+  <div class="sync-status syncing" id="sync-status">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" id="sync-icon">
+      <path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M20 10a8 8 0 00-14.9-2M4 14a8 8 0 0014.9 2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+    <span id="sync-text">جاري التحميل...</span>
+  </div>
+
+  <button class="btn-admin" onclick="showAdminPanel()">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="#f59e0b" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    لوحة الأدمن
+  </button>
 </div>
 
-<div class="toast" id="toast">✅ تم الحفظ والنسخ!</div>
+<div class="toast" id="toast"></div>
 
+<!-- ══ Admin Panel ══ -->
 <div id="adminPanel" class="admin-panel">
   <div class="admin-content">
-    <h3>👑 لوحة التحكم</h3>
+    <h3>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="#4A9EFF" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      لوحة التحكم
+    </h3>
     <input type="password" id="adminPass" class="admin-password" placeholder="كلمة المرور">
-    <button onclick="checkAdmin()">🔓 دخول</button>
-    <div id="adminActions" style="display: none; margin-top: 10px;">
-      <button onclick="generateWordReport()">📄 تصدير تقرير Word</button>
-      <button onclick="copyAllToClipboard()">📋 نسخ الكل</button>
-      <button onclick="clearAllData()" style="background:#dc2626;">⚠️ حذف الكل</button>
-      <button onclick="testFirebase()" style="background:#f59e0b;">🔧 اختبار الاتصال</button>
-      <hr>
-      <button onclick="closeAdminPanel()" class="close-btn">❌ إغلاق</button>
+    <button onclick="checkAdmin()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#fff" stroke-width="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      دخول
+    </button>
+    <div id="adminActions" style="display:none;margin-top:10px;">
+      <button onclick="generateWordReport()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#fff" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="#fff" stroke-width="2"/><line x1="8" y1="13" x2="16" y2="13" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="17" x2="16" y2="17" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        تصدير Word
+      </button>
+      <button onclick="copyAllToClipboard()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" stroke="#fff" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="#fff" stroke-width="2"/></svg>
+        نسخ الكل
+      </button>
+      <button onclick="clearAllData()" style="background:#dc2626;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M10 11v6M14 11v6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" stroke="#fff" stroke-width="2"/></svg>
+        حذف الكل
+      </button>
+      <button onclick="testFirebase()" style="background:#f59e0b;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="2"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14" stroke="#fff" stroke-width="2"/></svg>
+        اختبار الاتصال
+      </button>
+      <hr style="margin:6px 0;border-color:#4A9EFF33;">
+      <button onclick="closeAdminPanel()" class="close-btn">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        إغلاق
+      </button>
     </div>
   </div>
 </div>
@@ -298,10 +355,32 @@
     databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"
   };
 
-  let database = null;
-  let currentEntries = [];
-  let firebaseReady = false;
-  let isPinned = false;
+  let database = null, currentEntries = [], firebaseReady = false, isPinned = false;
+  let deferredInstallPrompt = null;
+
+  // ── PWA Install ──
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.getElementById('btn-install').classList.add('visible');
+  });
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('btn-install').classList.remove('visible');
+    deferredInstallPrompt = null;
+    showToast('تم تثبيت التطبيق بنجاح');
+  });
+  window.installPWA = async function() {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') document.getElementById('btn-install').classList.remove('visible');
+    deferredInstallPrompt = null;
+  };
+
+  // Register service worker for offline support
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
 
   function getTodayKey() {
     const d = new Date();
@@ -316,192 +395,129 @@
   function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    if (isError) t.classList.add('error');
-    else t.classList.remove('error');
+    t.classList.toggle('error', isError);
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
+    setTimeout(() => t.classList.remove('show'), 2200);
   }
 
   function setSyncStatus(status, msg = '') {
     const el = document.getElementById('sync-status');
-    if (status === 'synced') { el.textContent = msg || '☁️ متزامن ✓'; el.className = 'sync-status synced'; }
-    else if (status === 'syncing') { el.textContent = msg || '☁️ جاري...'; el.className = 'sync-status syncing'; }
-    else if (status === 'error') { el.textContent = msg || '☁️ خطأ في الاتصال'; el.className = 'sync-status error'; }
+    const tx = document.getElementById('sync-text');
+    const labels = { synced: 'متزامن', syncing: 'جاري...', error: 'خطأ في الاتصال' };
+    tx.textContent = msg || labels[status];
+    el.className = `sync-status ${status}`;
   }
 
   window.toggleCustom = function() {
-    const sel = document.getElementById('reason');
-    document.getElementById('custom-wrap').classList.toggle('visible', sel.value === 'مخصص');
+    document.getElementById('custom-wrap').classList.toggle('visible',
+      document.getElementById('reason').value === 'مخصص');
   };
 
-  // Always On Top — يفتح نافذة popup صغيرة فوق الكل
   window.toggleAlwaysOnTop = function() {
-    if (isPinned) return; // منع الفتح المزدوج
+    if (isPinned) return;
     isPinned = true;
-    const btn = document.getElementById('pin-btn');
-    btn.textContent = '📍';
-    btn.classList.add('active');
-    showToast('📌 فُتحت نافذة المقدمة');
-
-    const w = 210, h = 560;
-    const left = Math.max(0, screen.width - w - 10);
-    const top = 10;
-    const popup = window.open(
-      window.location.href,
-      'cancel_popup',
-      `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no,resizable=no,scrollbars=no,alwaysOnTop=yes`
-    );
+    document.getElementById('pin-btn').classList.add('active');
+    showToast('فُتحت نافذة منفصلة');
+    const w = 215, h = 580;
+    const popup = window.open(window.location.href, 'cancel_popup',
+      `width=${w},height=${h},left=${Math.max(0,screen.width-w-10)},top=10,toolbar=no,menubar=no,location=no,status=no,resizable=no,scrollbars=no`);
     if (!popup) {
-      showToast('⚠️ السماح بالنوافذ المنبثقة', true);
+      showToast('اسمح بالنوافذ المنبثقة', true);
       isPinned = false;
-      btn.textContent = '📌';
-      btn.classList.remove('active');
-    } else {
-      popup.focus();
-    }
+      document.getElementById('pin-btn').classList.remove('active');
+    } else { popup.focus(); }
   };
 
   window.testFirebase = async function() {
-    if (!firebaseReady || !database) { showToast('⚠️ Firebase غير جاهز', true); return; }
-    setSyncStatus('syncing', '☁️ جاري الاختبار...');
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    setSyncStatus('syncing');
     try {
-      const testRef = database.ref('test_connection');
-      await testRef.set({ timestamp: Date.now() });
-      const snapshot = await testRef.once('value');
-      if (snapshot.exists()) {
-        showToast('✅ الاتصال يعمل', false);
-        setSyncStatus('synced');
-        await testRef.remove();
-      }
-    } catch(e) {
-      showToast('❌ فشل: ' + e.message, true);
-      setSyncStatus('error');
-    }
+      const ref = database.ref('test_connection');
+      await ref.set({ t: Date.now() });
+      const s = await ref.once('value');
+      if (s.exists()) { showToast('الاتصال يعمل'); setSyncStatus('synced'); await ref.remove(); }
+    } catch(e) { showToast('فشل: ' + e.message, true); setSyncStatus('error'); }
   };
 
   async function saveToFirebase(entry) {
-    if (!firebaseReady || !database) return false;
+    if (!firebaseReady) return false;
     try {
       await database.ref(`cancellations/${getTodayKey()}/${entry.id}`).set(entry);
       return true;
-    } catch(e) {
-      showToast('❌ خطأ: ' + e.message, true);
-      return false;
-    }
+    } catch(e) { showToast('خطأ: ' + e.message, true); return false; }
   }
 
   async function loadFromFirebase() {
-    if (!firebaseReady || !database) return [];
+    if (!firebaseReady) return [];
     try {
-      const snapshot = await database.ref(`cancellations/${getTodayKey()}`).once('value');
-      return snapshot.exists() ? Object.values(snapshot.val()) : [];
+      const s = await database.ref(`cancellations/${getTodayKey()}`).once('value');
+      return s.exists() ? Object.values(s.val()) : [];
     } catch(e) { return []; }
   }
 
   function listenToFirebase() {
-    if (!firebaseReady || !database) return;
-    database.ref(`cancellations/${getTodayKey()}`).on('value', (snapshot) => {
-      if (snapshot.exists()) {
-        const cloudEntries = Object.values(snapshot.val());
-        cloudEntries.sort((a,b) => a.id - b.id);
-        if (JSON.stringify(cloudEntries) !== JSON.stringify(currentEntries)) {
-          currentEntries = cloudEntries;
-          updateCounter();
-          setSyncStatus('synced');
-        }
-      } else {
-        currentEntries = [];
-        updateCounter();
-      }
+    if (!firebaseReady) return;
+    database.ref(`cancellations/${getTodayKey()}`).on('value', (s) => {
+      if (s.exists()) {
+        const c = Object.values(s.val()).sort((a,b) => a.id - b.id);
+        if (JSON.stringify(c) !== JSON.stringify(currentEntries)) { currentEntries = c; updateCounter(); setSyncStatus('synced'); }
+      } else { currentEntries = []; updateCounter(); }
     }, () => setSyncStatus('error'));
   }
 
   window.sendEntry = async function() {
-    const order    = document.getElementById('order-num').value.trim();
-    const phone    = document.getElementById('phone-num').value.trim();
-    const branch   = document.getElementById('branch').value;
-    const reasonSelect = document.getElementById('reason');
-    let reason = reasonSelect.value;
+    const order  = document.getElementById('order-num').value.trim();
+    const phone  = document.getElementById('phone-num').value.trim();
+    const branch = document.getElementById('branch').value;
+    let reason   = document.getElementById('reason').value;
     if (reason === 'مخصص') reason = document.getElementById('custom-reason-txt').value.trim();
 
-    if (!order)  { showToast('⚠️ رقم الأوردر مطلوب', true); return; }
-    if (!branch) { showToast('⚠️ الفرع مطلوب', true); return; }
-    if (!reason) { showToast('⚠️ السبب مطلوب', true); return; }
-    if (!firebaseReady) { showToast('⚠️ Firebase غير جاهز', true); return; }
+    if (!order)  { showToast('رقم الأوردر مطلوب', true); return; }
+    if (!branch) { showToast('الفرع مطلوب', true); return; }
+    if (!reason) { showToast('السبب مطلوب', true); return; }
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
 
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('ar-IQ', {hour:'2-digit', minute:'2-digit'});
-    const entry = {
-      id: Date.now(), order, phone: phone || '', branch, reason,
-      time: timeStr, date: getTodayKey(), createdAt: now.getTime()
-    };
+    const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
+      time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
+      date: getTodayKey(), createdAt: now.getTime() };
 
-    setSyncStatus('syncing', '☁️ جاري الحفظ...');
-    const saved = await saveToFirebase(entry);
-    if (!saved) { setSyncStatus('error'); showToast(`❌ فشل حفظ ${order}`, true); return; }
+    setSyncStatus('syncing');
+    if (!await saveToFirebase(entry)) { setSyncStatus('error'); return; }
 
     currentEntries.push(entry);
     currentEntries.sort((a,b) => a.id - b.id);
-    updateCounter();
-    setSyncStatus('synced');
-    showToast(`✅ تم حفظ ${order}`, false);
+    updateCounter(); setSyncStatus('synced');
+    showToast(`تم حفظ ${order}`);
 
     const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}`;
+    try { await navigator.clipboard.writeText(msg); }
+    catch(e) { const ta=document.createElement('textarea'); ta.value=msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
 
-    try {
-      await navigator.clipboard.writeText(msg);
-    } catch(e) {
-      const ta = document.createElement('textarea');
-      ta.value = msg;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-
-    document.getElementById('order-num').value = '';
-    document.getElementById('phone-num').value = '';
-    document.getElementById('branch').value = '';
-    document.getElementById('reason').value = '';
-    document.getElementById('custom-reason-txt').value = '';
+    ['order-num','phone-num','branch','reason','custom-reason-txt'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('custom-wrap').classList.remove('visible');
     document.getElementById('order-num').focus();
   };
 
-  // ♻️ استرجاع طلب ملغي — حذف من Firebase بناءً على رقم الأوردر + الفرع
   window.restoreEntry = async function() {
     const orderNum = document.getElementById('restore-order').value.trim();
     const branch   = document.getElementById('restore-branch').value;
-
-    if (!orderNum) { showToast('⚠️ أدخل رقم الأوردر', true); return; }
-    if (!branch)   { showToast('⚠️ اختر الفرع', true); return; }
-    if (!firebaseReady) { showToast('⚠️ Firebase غير جاهز', true); return; }
-
-    setSyncStatus('syncing', '☁️ جاري البحث...');
-
-    // ابحث عن الإدخال المطابق
+    if (!orderNum) { showToast('أدخل رقم الأوردر', true); return; }
+    if (!branch)   { showToast('اختر الفرع', true); return; }
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    setSyncStatus('syncing');
     const match = currentEntries.find(e => e.order === orderNum && e.branch === branch);
-    if (!match) {
-      showToast(`❌ لم يُعثر على أوردر ${orderNum} في ${branch}`, true);
-      setSyncStatus('synced');
-      return;
-    }
-
+    if (!match) { showToast(`لم يُعثر على ${orderNum} في ${branch}`, true); setSyncStatus('synced'); return; }
     try {
       await database.ref(`cancellations/${getTodayKey()}/${match.id}`).remove();
       currentEntries = currentEntries.filter(e => e.id !== match.id);
-      updateCounter();
-      setSyncStatus('synced');
-      showToast(`✅ تم استرجاع أوردر ${orderNum}`, false);
+      updateCounter(); setSyncStatus('synced');
+      showToast(`تم استرجاع أوردر ${orderNum}`);
       document.getElementById('restore-order').value = '';
       document.getElementById('restore-branch').value = '';
-    } catch(e) {
-      showToast('❌ فشل الاسترجاع: ' + e.message, true);
-      setSyncStatus('error');
-    }
+    } catch(e) { showToast('فشل الاسترجاع', true); setSyncStatus('error'); }
   };
 
-  // Admin
   window.showAdminPanel  = () => document.getElementById('adminPanel').classList.add('show');
   window.closeAdminPanel = () => {
     document.getElementById('adminPanel').classList.remove('show');
@@ -511,132 +527,73 @@
   window.checkAdmin = () => {
     if (document.getElementById('adminPass').value === '1') {
       document.getElementById('adminActions').style.display = 'block';
-      showToast('✅ مرحباً أيها الأدمن');
-    } else {
-      showToast('❌ كلمة المرور غير صحيحة', true);
-    }
+      showToast('مرحباً أيها الأدمن');
+    } else showToast('كلمة المرور غير صحيحة', true);
   };
-
-  function buildBranchTable(branch, entries) {
-    // كل جدول فرع: عنوان بالأحمر + 10 صفوف ثابتة (مع فراغات لو أقل)
-    const ROWS = 10;
-    let rows = '';
-    for (let i = 0; i < ROWS; i++) {
-      const e = entries[i];
-      if (e) {
-        rows += `<tr>
-          <td style="direction:ltr;font-size:9pt;">${e.phone || ''}</td>
-          <td style="font-size:9pt;color:#c00;font-weight:bold;">${e.reason}</td>
-          <td style="font-size:9pt;">${e.order}</td>
-        </tr>`;
-      } else {
-        rows += `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`;
-      }
-    }
-    return `<table dir="rtl" style="border-collapse:collapse;width:170px;font-family:Arial;">
-      <thead>
-        <tr>
-          <th style="border:1px solid #999;padding:3px 5px;font-size:8pt;color:#c00;background:#fff;text-align:center;">الرقم</th>
-          <th style="border:1px solid #999;padding:3px 5px;font-size:8pt;color:#c00;background:#fff;text-align:center;">اتجاه فرع ${branch} -</th>
-          <th style="border:1px solid #999;padding:3px 5px;font-size:8pt;color:#888;background:#fff;text-align:center;">رقم الاوردر</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>`;
-  }
 
   window.generateWordReport = function() {
     if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
     const grouped = {};
-    currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch] = []; grouped[e.branch].push(e); });
-
-    const branches = Object.keys(grouped);
-    // رتب الجداول بـ 4 في كل صف (مثل الصورة)
-    const COLS = 4;
-    let rows_html = '';
-    for (let i = 0; i < branches.length; i += COLS) {
-      rows_html += `<tr valign="top">`;
-      for (let j = 0; j < COLS; j++) {
-        const b = branches[i + j];
-        rows_html += `<td style="padding:8px;vertical-align:top;">`;
-        if (b) rows_html += buildBranchTable(b, grouped[b]);
-        rows_html += `</td>`;
-      }
-      rows_html += `</tr>`;
-    }
-
+    currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
     const today = new Date().toLocaleDateString('ar-IQ');
-    const html = `<!DOCTYPE html>
-<html dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>تقرير الإلغاءات - ${getTodayKey()}</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 15px; background: #fff; direction: rtl; }
-  h2 { text-align: center; color: #1B52C4; font-size: 14pt; margin-bottom: 4px; }
-  .sub { text-align: center; font-size: 9pt; color: #555; margin-bottom: 12px; }
-  .outer { border-collapse: collapse; width: 100%; }
-  td { border: none; }
-  table table td, table table th { border: 1px solid #bbb; padding: 3px 6px; text-align: center; }
-  .footer { text-align: center; margin-top: 14px; font-size: 10pt; color: #333; }
-</style>
-</head>
-<body>
-<h2>تقرير الإلغاءات اليومي</h2>
-<div class="sub">التاريخ: ${today} &nbsp;|&nbsp; إجمالي الإلغاءات: ${currentEntries.length}</div>
-<table class="outer">
-  ${rows_html}
-</table>
-<div class="footer">
-  ${branches.map(b => `🏪 ${b}: <b>${grouped[b].length}</b>`).join(' &nbsp;|&nbsp; ')}
-</div>
-</body>
-</html>`;
-
-    const blob = new Blob([html], {type:'application/msword'});
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `تقرير_الالغاءات_${getTodayKey()}.doc`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    showToast('✅ تم تصدير التقرير');
+    let tablesHtml = '';
+    for (const [branch, entries] of Object.entries(grouped)) {
+      let rows = entries.map(e => `<tr>
+        <td style="font-weight:bold;direction:ltr;">${e.phone||''}</td>
+        <td>${e.reason}</td><td>${e.order}</td></tr>`).join('');
+      tablesHtml += `<div style="margin-bottom:24px;">
+        <table dir="rtl" style="width:100%;border-collapse:collapse;font-family:Arial;font-size:11pt;">
+          <thead><tr>
+            <th style="border:2px solid #333;padding:5px 8px;color:#cc0000;text-align:center;">الرقم</th>
+            <th style="border:2px solid #333;padding:5px 8px;color:#cc0000;text-align:center;">الغاء ${branch} ـ</th>
+            <th style="border:2px solid #333;padding:5px 8px;color:#cc0000;text-align:center;">رقم الاوردر</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    }
+    const html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
+    <style>body{font-family:Arial;margin:25px 30px;direction:rtl;}h2{text-align:center;color:#1B52C4;font-size:15pt;}
+    .sub{text-align:center;font-size:10pt;color:#444;margin-bottom:20px;}
+    td{border:1.5px solid #333;padding:5px 8px;text-align:center;}
+    .footer{text-align:center;margin-top:18px;font-size:10pt;color:#333;border-top:1px solid #ccc;padding-top:10px;}</style>
+    </head><body>
+    <h2>تقرير الإلغاءات اليومي</h2>
+    <div class="sub">التاريخ: ${today} | إجمالي الإلغاءات: ${currentEntries.length}</div>
+    ${tablesHtml}
+    <div class="footer">${Object.entries(grouped).map(([b,es])=>`${b}: <b>${es.length}</b>`).join(' | ')} | المجموع: <b>${currentEntries.length}</b></div>
+    </body></html>`;
+    const blob = new Blob([html],{type:'application/msword'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `تقرير_الالغاءات_${getTodayKey()}.doc`;
+    a.click(); URL.revokeObjectURL(a.href);
+    showToast('تم تصدير التقرير');
   };
 
   window.copyAllToClipboard = function() {
     if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
     const grouped = {};
-    currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch] = []; grouped[e.branch].push(e); });
-
+    currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
     const LINE = '─'.repeat(34);
-    let text = `📊 تقرير الإلغاءات — ${getTodayKey()}\n${LINE}\n\n`;
-
+    let text = `تقرير الإلغاءات — ${getTodayKey()}\n${LINE}\n\n`;
     for (const [branch, entries] of Object.entries(grouped)) {
-      text += `🏪 ${branch} (${entries.length})\n`;
+      text += `${branch} (${entries.length})\n`;
       text += `${'رقم الأوردر'.padStart(10)} │ ${'السبب'.padEnd(10)} │ الرقم\n`;
       text += `${'─'.repeat(10)}─┼─${'─'.repeat(10)}─┼─${'─'.repeat(14)}\n`;
-      entries.forEach(e => {
-        text += `${String(e.order).padStart(10)} │ ${e.reason.padEnd(10)} │ ${e.phone || '—'}\n`;
-      });
+      entries.forEach(e => { text += `${String(e.order).padStart(10)} │ ${e.reason.padEnd(10)} │ ${e.phone||'—'}\n`; });
       text += '\n';
     }
-
-    text += `${LINE}\n📦 إجمالي الإلغاءات: ${currentEntries.length}\n`;
+    text += `${LINE}\nإجمالي الإلغاءات: ${currentEntries.length}\n`;
     text += Object.entries(grouped).map(([b,es]) => `• ${b}: ${es.length}`).join('\n');
-
     navigator.clipboard.writeText(text);
-    showToast('✅ تم نسخ كل الإلغاءات');
+    showToast('تم نسخ كل الإلغاءات');
   };
 
   window.clearAllData = function() {
-    if (confirm('⚠️ هل أنت متأكد من حذف كل بيانات اليوم؟')) {
-      if (database) {
-        database.ref(`cancellations/${getTodayKey()}`).remove().then(() => {
-          currentEntries = []; updateCounter();
-          showToast('✅ تم حذف كل البيانات');
-        }).catch(() => showToast('❌ فشل الحذف', true));
-      }
+    if (confirm('هل أنت متأكد من حذف كل بيانات اليوم؟')) {
+      database.ref(`cancellations/${getTodayKey()}`).remove()
+        .then(() => { currentEntries=[]; updateCounter(); showToast('تم حذف كل البيانات'); })
+        .catch(() => showToast('فشل الحذف', true));
     }
   };
 
@@ -646,39 +603,20 @@
         firebase.initializeApp(firebaseConfig);
         database = firebase.database();
         firebaseReady = true;
-        setSyncStatus('synced');
-        database.ref('.info/connected').on('value', (snap) => {
-          if (snap.val() === true) {
-            setSyncStatus('synced');
-            loadInitialData();
-            listenToFirebase();
-          } else {
-            setSyncStatus('error', '❌ غير متصل');
-          }
+        database.ref('.info/connected').on('value', snap => {
+          if (snap.val()) { setSyncStatus('synced'); loadInitialData(); listenToFirebase(); }
+          else setSyncStatus('error', 'غير متصل');
         });
-      } else {
-        setSyncStatus('error', '❌ خطأ في التحميل');
-        setTimeout(initFirebase, 1000);
-      }
-    } catch(e) {
-      setSyncStatus('error', '❌ خطأ في التهيئة');
-      setTimeout(initFirebase, 1000);
-    }
+      } else { setSyncStatus('error','خطأ في التحميل'); setTimeout(initFirebase,1000); }
+    } catch(e) { setSyncStatus('error','خطأ في التهيئة'); setTimeout(initFirebase,1000); }
   }
 
   async function loadInitialData() {
-    const cloudData = await loadFromFirebase();
-    if (cloudData.length > 0) {
-      currentEntries = cloudData.sort((a,b) => a.id - b.id);
-      updateCounter();
-    }
+    const data = await loadFromFirebase();
+    if (data.length) { currentEntries = data.sort((a,b)=>a.id-b.id); updateCounter(); }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    currentEntries = [];
-    updateCounter();
-    initFirebase();
-  });
+  document.addEventListener('DOMContentLoaded', () => { updateCounter(); initFirebase(); });
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
