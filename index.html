@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الإلغاءات - مزامنة فورية</title>
+<title>تسجيل الإلغاءات - نسخة اختبار</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background: #10132a;
     color: #eee;
-    width: 180px;
+    width: 190px;
     overflow: hidden;
     user-select: none;
   }
@@ -196,7 +196,7 @@
   <hr>
   <button class="btn-send" onclick="sendEntry()">📋 حفظ + نسخ</button>
   <div class="counter" id="counter">الإلغاءات اليوم: 0</div>
-  <div class="sync-status" id="sync-status">☁️ جاري الاتصال...</div>
+  <div class="sync-status" id="sync-status">☁️ جاري التحميل...</div>
   <button class="btn-admin" onclick="showAdminPanel()">👑 لوحة الأدمن</button>
 </div>
 
@@ -211,6 +211,7 @@
       <button onclick="generateWordReport()">📄 تصدير تقرير Word</button>
       <button onclick="copyAllToClipboard()">📋 نسخ الكل</button>
       <button onclick="clearAllData()" style="background:#dc2626;">⚠️ حذف الكل</button>
+      <button onclick="testFirebase()" style="background:#f59e0b;">🔧 اختبار الاتصال</button>
       <hr>
       <button onclick="closeAdminPanel()" class="close-btn">❌ إغلاق</button>
     </div>
@@ -218,12 +219,12 @@
 </div>
 
 <script>
-  // Firebase Configuration
+  // Firebase Configuration - تأكد من صحة الرابط
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
     authDomain: "cansel-9df25.firebaseapp.com",
     projectId: "cansel-9df25",
-    databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"
+    databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"  // تأكد من هذا الرابط
   };
   
   let database;
@@ -254,10 +255,10 @@
       el.textContent = msg || '☁️ متزامن ✓';
       el.className = 'sync-status synced';
     } else if (status === 'syncing') {
-      el.textContent = msg || '☁️ جاري المزامنة...';
+      el.textContent = msg || '☁️ جاري...';
       el.className = 'sync-status syncing';
     } else if (status === 'error') {
-      el.textContent = msg || '☁️ غير متزامن';
+      el.textContent = msg || '☁️ خطأ في الاتصال';
       el.className = 'sync-status error';
     }
   }
@@ -273,13 +274,37 @@
     if (btn.classList.contains('active')) {
       btn.textContent = '📍';
       showToast('📌 تم فتح نافذة منفصلة', false);
-      window.open(window.location.href, '_blank', 'width=200,height=480,toolbar=no,menubar=no,location=no,status=no');
+      window.open(window.location.href, '_blank', 'width=200,height=500,toolbar=no,menubar=no,location=no,status=no');
     } else {
       btn.textContent = '📌';
     }
   };
   
-  // Save to Firebase
+  // اختبار الاتصال
+  window.testFirebase = async function() {
+    if (!database) {
+      showToast('⚠️ Firebase غير مهيأ', true);
+      return;
+    }
+    
+    setSyncStatus('syncing', '☁️ جاري اختبار الاتصال...');
+    
+    try {
+      const testRef = database.ref('test_connection');
+      await testRef.set({ timestamp: Date.now(), message: 'اختبار الاتصال' });
+      const snapshot = await testRef.once('value');
+      if (snapshot.exists()) {
+        showToast('✅ الاتصال بقاعدة البيانات يعمل', false);
+        setSyncStatus('synced');
+        await testRef.remove();
+      }
+    } catch(e) {
+      console.error("Test error:", e);
+      showToast('❌ فشل الاتصال: ' + e.message, true);
+      setSyncStatus('error', '❌ فشل الاتصال');
+    }
+  };
+  
   async function saveToFirebase(entry) {
     if (!database) return false;
     try {
@@ -287,37 +312,33 @@
       await database.ref(path).set(entry);
       return true;
     } catch(e) {
-      console.error("Firebase save error:", e);
+      console.error("Save error:", e);
+      showToast('❌ خطأ: ' + e.message, true);
       return false;
     }
   }
   
-  // Load from Firebase
   async function loadFromFirebase() {
     if (!database) return [];
     try {
       const snapshot = await database.ref(`cancellations/${getTodayKey()}`).once('value');
       if (snapshot.exists()) {
-        const data = snapshot.val();
-        return Object.values(data);
+        return Object.values(snapshot.val());
       }
       return [];
     } catch(e) {
-      console.error("Firebase load error:", e);
+      console.error("Load error:", e);
       return [];
     }
   }
   
-  // Listen to realtime changes
   function listenToFirebase() {
     if (!database) return;
     const path = `cancellations/${getTodayKey()}`;
-    database.ref(path).on('value', async (snapshot) => {
+    database.ref(path).on('value', (snapshot) => {
       if (snapshot.exists()) {
         const cloudEntries = Object.values(snapshot.val());
         cloudEntries.sort((a,b) => a.id - b.id);
-        
-        // Check if data changed
         if (JSON.stringify(cloudEntries) !== JSON.stringify(currentEntries)) {
           currentEntries = cloudEntries;
           updateCounter();
@@ -326,7 +347,7 @@
       }
     }, (error) => {
       console.error("Realtime error:", error);
-      setSyncStatus('error', '⚠️ فقد الاتصال');
+      setSyncStatus('error');
     });
   }
   
@@ -361,18 +382,16 @@
     
     setSyncStatus('syncing', '☁️ جاري الحفظ...');
     
-    // Save to Firebase
     const saved = await saveToFirebase(entry);
     
     if (saved) {
-      // Add to local array
       currentEntries.push(entry);
       currentEntries.sort((a,b) => a.id - b.id);
       updateCounter();
       setSyncStatus('synced');
       showToast(`✅ تم حفظ ${order}`, false);
     } else {
-      setSyncStatus('error', '⚠️ فشل الحفظ');
+      setSyncStatus('error');
       showToast(`❌ فشل حفظ ${order}`, true);
       return;
     }
@@ -454,7 +473,7 @@
     for (const [branch, entries] of Object.entries(grouped)) {
       html += `<div class="branch">
         <h2>🏪 ${branch} (${entries.length})</h2>
-        <table><thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>السبب</th><th>الوقت</th><tr></thead><tbody>`;
+        <table><thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>السبب</th><th>الوقت</th></tr></thead><tbody>`;
       entries.forEach((e, i) => {
         html += `<tr><td>${i+1}</td><td>${e.order}</td><td dir="ltr">${e.phone || '—'}</td><td>${e.reason}</td><td>${e.time}</td></tr>`;
       });
@@ -514,54 +533,50 @@
     }
   };
   
-  // Initialize Firebase and load data
+  // Initialize
   async function init() {
     try {
+      setSyncStatus('syncing', '☁️ جاري الاتصال...');
+      
       firebase.initializeApp(firebaseConfig);
       database = firebase.database();
-      console.log("✅ Firebase connected");
       
-      setSyncStatus('syncing', '☁️ جاري التحميل...');
+      // Test connection
+      const testRef = database.ref('.info/connected');
+      testRef.on('value', (snap) => {
+        if (snap.val() === true) {
+          console.log("✅ Connected to Firebase");
+          setSyncStatus('synced');
+          loadInitialData();
+        } else {
+          console.log("❌ Disconnected from Firebase");
+          setSyncStatus('error', '❌ لا يوجد اتصال');
+        }
+      });
       
-      // Load initial data
+    } catch(e) {
+      console.error("Init error:", e);
+      setSyncStatus('error', '❌ خطأ في التهيئة');
+      showToast('❌ فشل تهيئة Firebase: ' + e.message, true);
+    }
+  }
+  
+  async function loadInitialData() {
+    try {
       const cloudData = await loadFromFirebase();
       if (cloudData.length > 0) {
         currentEntries = cloudData;
         currentEntries.sort((a,b) => a.id - b.id);
         updateCounter();
       }
-      
-      setSyncStatus('synced');
       listenToFirebase();
-      
     } catch(e) {
-      console.error("Firebase init error:", e);
-      setSyncStatus('error', '❌ خطأ في الاتصال');
-      showToast('❌ فشل الاتصال بقاعدة البيانات', true);
+      console.error("Load initial error:", e);
     }
   }
   
   // Start
   init();
-  
-  window.addEventListener('online', () => {
-    showToast('🌐 تم الاتصال بالإنترنت', false);
-    setSyncStatus('syncing', '☁️ جاري المزامنة...');
-    setTimeout(() => {
-      loadFromFirebase().then(data => {
-        if (data.length > 0) {
-          currentEntries = data;
-          updateCounter();
-        }
-        setSyncStatus('synced');
-      });
-    }, 1000);
-  });
-  
-  window.addEventListener('offline', () => {
-    setSyncStatus('error', '⚠️ لا يوجد إنترنت');
-    showToast('⚠️ لا يوجد اتصال بالإنترنت', true);
-  });
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js"></script>
