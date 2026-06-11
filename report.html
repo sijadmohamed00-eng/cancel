@@ -123,7 +123,7 @@
     font-weight: bold;
   }
 
-  /* الجدول بنفس التنسيق المطلوب */
+  /* الجدول - بدون عمود الوقت */
   .branch-table {
     width: 100%;
     border-collapse: collapse;
@@ -257,7 +257,7 @@
     return grouped;
   }
 
-  // عرض الأفرع - كل فرع لوحده
+  // عرض الأفرع - كل فرع لوحده (بدون عمود الوقت)
   function renderBranches() {
     const searchText = document.getElementById('search-input').value.toLowerCase();
     let filtered = allEntries;
@@ -294,23 +294,18 @@
                   <th>رقم الأوردر</th>
                   <th>السبب</th>
                   <th>رقم الزبون</th>
-                  <th>الوقت</th>
                 </tr>
               </thead>
               <tbody>
         `;
         
         entries.forEach((entry, idx) => {
-          // تحويل الوقت إلى صيغة العربية إذا لزم
-          let timeDisplay = entry.time || '--:--';
-          
           html += `
             <tr>
               <td class="serial-col">${idx + 1}</td>
               <td><strong>${entry.order}</strong></td>
               <td>${entry.reason}</td>
               <td dir="ltr">${entry.phone || '—'}</td>
-              <td>${timeDisplay}</td>
             </tr>
           `;
         });
@@ -367,7 +362,7 @@
 
   window.loadData = loadData;
 
-  // تصدير إلى Word بنفس التنسيق
+  // تصدير إلى Word بنفس التنسيق (بدون وقت)
   function exportToWord() {
     if (allEntries.length === 0) {
       alert('لا توجد بيانات للتصدير');
@@ -423,7 +418,7 @@
             </div>
             <table class="branch-table">
               <thead>
-                <tr><th>#</th><th>رقم الأوردر</th><th>السبب</th><th>رقم الزبون</th><th>الوقت</th></tr>
+                <tr><th>#</th><th>رقم الأوردر</th><th>السبب</th><th>رقم الزبون</th></tr>
               </thead>
               <tbody>
         `;
@@ -434,7 +429,6 @@
               <td>${entry.order}</td>
               <td>${entry.reason}</td>
               <td dir="ltr">${entry.phone || '—'}</td>
-              <td>${entry.time || '--:--'}</td>
             </tr>
           `;
         });
