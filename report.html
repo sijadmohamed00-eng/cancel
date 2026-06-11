@@ -5,120 +5,203 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تقرير الإلغاءات</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
   body {
-    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-    background: #0a0e1a;
-    color: #eee;
-    padding: 20px;
-    min-height: 100vh;
+    font-family: 'Segoe UI', 'Tahoma', Arial, sans-serif;
+    background: #fff;
+    color: #000;
+    padding: 30px;
+    direction: rtl;
   }
-  .container { max-width: 1200px; margin: 0 auto; }
-  .header {
-    background: linear-gradient(135deg, #1B52C4, #0d3a8a);
-    padding: 15px 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* رأس التقرير */
+  .report-header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 15px;
+  }
+
+  .report-header h1 {
+    font-size: 24px;
+    margin-bottom: 5px;
+  }
+
+  .report-header h3 {
+    font-size: 18px;
+    font-weight: normal;
+    margin-bottom: 5px;
+  }
+
+  .report-header p {
+    font-size: 14px;
+    color: #555;
+  }
+
+  /* جدولين متجاورين */
+  .tables-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 30px;
+    margin-bottom: 40px;
     flex-wrap: wrap;
-    gap: 10px;
   }
-  .header h1 { font-size: 20px; }
-  .stats { display: flex; gap: 15px; flex-wrap: wrap; }
-  .stat-card {
-    background: #10132a;
-    padding: 8px 16px;
-    border-radius: 8px;
-    border-right: 3px solid #4A9EFF;
+
+  .table-wrapper {
+    flex: 1;
+    min-width: 300px;
   }
-  .stat-card span { color: #4A9EFF; font-size: 12px; }
-  .stat-card .number { font-size: 22px; font-weight: bold; color: #fff; }
+
+  /* تصميم الجدول نفس الصورة */
+  .branch-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+
+  .branch-table caption {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 10px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    text-align: center;
+  }
+
+  .branch-table th,
+  .branch-table td {
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    text-align: center;
+  }
+
+  .branch-table th {
+    background: #f0f0f0;
+    font-weight: bold;
+  }
+
+  .branch-table td {
+    background: #fff;
+  }
+
+  /* تنسيق خاص لخلية "الغاء فرع" */
+  .branch-caption {
+    background: #e8e8e8;
+    font-weight: bold;
+  }
+
+  /* زر التحكم */
   .controls {
-    background: #10132a;
-    padding: 12px 15px;
-    border-radius: 10px;
     margin-bottom: 20px;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
     align-items: center;
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
   }
-  .controls input, .controls select {
-    background: #0a1228;
-    border: 1px solid #1B52C444;
-    border-radius: 6px;
-    color: #fff;
+
+  .controls input {
     padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 150px;
   }
+
   .controls button {
+    padding: 8px 16px;
     background: #1B52C4;
     color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 8px 16px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 13px;
   }
-  .btn-refresh { background: #16a34a !important; }
-  .btn-export { background: #dc2626 !important; }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #10132a;
-    border-radius: 12px;
-    overflow: hidden;
+
+  .controls button:hover {
+    opacity: 0.9;
   }
-  th, td {
-    padding: 12px 10px;
+
+  .btn-export {
+    background: #dc2626 !important;
+  }
+
+  .btn-print {
+    background: #16a34a !important;
+  }
+
+  .footer {
+    margin-top: 30px;
     text-align: center;
-    border-bottom: 1px solid #1B52C444;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #ddd;
+    padding-top: 15px;
   }
-  th { background: #1B52C4; }
-  tr:hover { background: #1a1f3a; }
-  .empty-row td { text-align: center; padding: 40px; color: #4A9EFF99; }
-  .branch-badge { background: #4A9EFF22; padding: 4px 8px; border-radius: 6px; }
-  .reason-badge { background: #f59e0b22; color: #f59e0b; padding: 4px 8px; border-radius: 6px; }
-  .footer { margin-top: 20px; text-align: center; font-size: 11px; color: #4A9EFF99; }
+
+  @media print {
+    body {
+      padding: 15px;
+    }
+    .controls {
+      display: none;
+    }
+    .branch-table {
+      break-inside: avoid;
+    }
+  }
 </style>
 </head>
 <body>
+
 <div class="container">
-  <div class="header">
-    <h1>📊 تقرير الإلغاءات</h1>
-    <div class="stats">
-      <div class="stat-card"><span>📦 إجمالي الإلغاءات</span><div class="number" id="total-count">0</div></div>
-      <div class="stat-card"><span>🏪 الفروع</span><div class="number" id="branch-count">0</div></div>
-      <div class="stat-card"><span>❌ أسباب</span><div class="number" id="reason-count">0</div></div>
-    </div>
+  <!-- رأس التقرير -->
+  <div class="report-header">
+    <h1>شركة عصر الشرق</h1>
+    <h3>لإدارة المطاعم</h3>
+    <h3>قسم خدمة العملاء</h3>
+    <p>التاريخ: <span id="report-date"></span></p>
+    <hr style="margin-top: 10px;">
   </div>
+
+  <!-- أزرار التحكم -->
   <div class="controls">
-    <input type="text" id="search-input" placeholder="🔍 بحث..." style="flex:1; min-width:150px;">
-    <select id="branch-filter"><option value="">كل الفروع</option></select>
-    <select id="reason-filter"><option value="">كل الأسباب</option></select>
-    <button onclick="loadData()" class="btn-refresh">🔄 تحديث</button>
-    <button onclick="exportToExcel()" class="btn-export">📎 تصدير Excel</button>
-    <button onclick="window.print()">🖨️ طباعة</button>
+    <input type="text" id="search-input" placeholder="🔍 بحث برقم الأوردر أو رقم الزبون...">
+    <button onclick="loadData()" id="refreshBtn">🔄 تحديث</button>
+    <button onclick="exportToWord()" class="btn-export">📄 تصدير Word</button>
+    <button onclick="window.print()" class="btn-print">🖨️ طباعة</button>
   </div>
-  <div style="overflow-x:auto;">
-    <table id="report-table">
-      <thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>الفرع</th><th>سبب الإلغاء</th><th>الوقت</th><th>التاريخ</th></tr></thead>
-      <tbody id="table-body"><tr class="empty-row"><td colspan="7">⏳ جاري التحميل...</td></tr></tbody>
-    </table>
+
+  <!-- هنا سيتم عرض الجداول -->
+  <div id="tables-container"></div>
+
+  <div class="footer">
+    آخر تحديث: <span id="last-update">-</span>
   </div>
-  <div class="footer">🔄 البيانات محدثة تلقائياً | آخر تحديث: <span id="last-update">-</span></div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
+  // Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
     authDomain: "cansel-9df25.firebaseapp.com",
     projectId: "cansel-9df25",
-    storageBucket: "cansel-9df25.firebasestorage.app",
-    messagingSenderId: "1056776938370",
-    appId: "1:1056776938370:web:79c3d830fc2f37debfa59b",
     databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"
   };
 
@@ -127,96 +210,292 @@
 
   let allEntries = [];
 
+  // قائمة الفروع بالترتيب المطلوب
+  const branchesOrder = [
+    "فرع الشعب", "فرع البنوك", "فرع الغدير", "فرع الحرية",
+    "فرع الدورة", "فرع بسماية", "فرع الغزالية", "فرع الأعظمية",
+    "فرع حي العامل", "فرع البوعيثة", "فرع حي الجهاد", "فرع شهداء البياع"
+  ];
+
   function getTodayKey() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
+  // عرض التاريخ
+  function displayDate() {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+    document.getElementById('report-date').textContent = dateStr;
+  }
+
+  // تجميع الإلغاءات حسب الفرع
+  function groupByBranch(entries) {
+    const grouped = {};
+    branchesOrder.forEach(branch => { grouped[branch] = []; });
+    entries.forEach(entry => {
+      if (grouped[entry.branch]) {
+        grouped[entry.branch].push(entry);
+      } else {
+        grouped[entry.branch] = [entry];
+      }
+    });
+    return grouped;
+  }
+
+  // عرض الجداول - نفس تصميم الصورة (جدولين متجاورين)
+  function renderTables() {
+    const searchText = document.getElementById('search-input').value.toLowerCase();
+    let filtered = allEntries;
+    
+    if (searchText) {
+      filtered = allEntries.filter(e => 
+        e.order.toLowerCase().includes(searchText) || 
+        e.phone.toLowerCase().includes(searchText)
+      );
+    }
+    
+    const grouped = groupByBranch(filtered);
+    const container = document.getElementById('tables-container');
+    
+    // تحويل الفروع إلى مصفوفة للعرض في صفوف (جدولين يمين ويسار)
+    const branchesWithData = branchesOrder.filter(branch => grouped[branch].length > 0);
+    
+    let html = '';
+    
+    // عرض الفروع في أزواج (جدولين جنب بعض)
+    for (let i = 0; i < branchesWithData.length; i += 2) {
+      html += '<div class="tables-row">';
+      
+      // الجدول الأول (اليمين)
+      const branch1 = branchesWithData[i];
+      if (branch1) {
+        html += generateBranchTable(branch1, grouped[branch1]);
+      }
+      
+      // الجدول الثاني (اليسار)
+      const branch2 = branchesWithData[i + 1];
+      if (branch2) {
+        html += generateBranchTable(branch2, grouped[branch2]);
+      }
+      
+      html += '</div>';
+    }
+    
+    if (branchesWithData.length === 0) {
+      html = '<div style="text-align:center; padding:50px; background:#f5f5f5; border-radius:10px;">📭 لا توجد إلغاءات مسجلة اليوم</div>';
+    }
+    
+    container.innerHTML = html;
+    
+    // تحديث الإحصائيات
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ');
+  }
+  
+  // إنشاء جدول فرع واحد بنفس تصميم الصورة
+  function generateBranchTable(branchName, entries) {
+    if (!entries || entries.length === 0) return '';
+    
+    entries.sort((a, b) => b.id - a.id);
+    
+    let tableHtml = `
+      <div class="table-wrapper">
+        <table class="branch-table" cellspacing="0">
+          <caption>الغاء ${branchName}</caption>
+          <thead>
+            <tr>
+              <th>رقم الأوردر</th>
+              <th>السبب</th>
+              <th>رقم الزبون</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    entries.forEach(entry => {
+      tableHtml += `
+        <tr>
+          <td>${entry.order}</td>
+          <td>${entry.reason}</td>
+          <td dir="ltr">${entry.phone || '—'}</td>
+        </tr>
+      `;
+    });
+    
+    tableHtml += `
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    return tableHtml;
+  }
+
+  // تحميل البيانات من Firebase
   function loadData() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    refreshBtn.textContent = '⏳ جاري...';
+    
     database.ref(`cancellations/${getTodayKey()}`).once('value').then((snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
         allEntries = Object.entries(data).map(([id, entry]) => ({
-          id: parseInt(id), order: entry.order, phone: entry.phone || '-',
-          branch: entry.branch, reason: entry.reason, time: entry.time, date: getTodayKey()
+          id: parseInt(id),
+          order: entry.order || '-',
+          phone: entry.phone || '-',
+          branch: entry.branch || '-',
+          reason: entry.reason || '-',
+          time: entry.time || '-',
+          date: getTodayKey()
         }));
       } else {
+        // محاولة التحميل من sessionStorage كنسخة احتياطية
         const saved = sessionStorage.getItem('current_cancel_entries');
         allEntries = saved ? JSON.parse(saved) : [];
       }
-      renderTable();
-      updateStats();
-      document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ');
+      
+      renderTables();
+      refreshBtn.textContent = '🔄 تحديث';
+      
+    }).catch(err => {
+      console.error("Load error:", err);
+      const saved = sessionStorage.getItem('current_cancel_entries');
+      allEntries = saved ? JSON.parse(saved) : [];
+      renderTables();
+      refreshBtn.textContent = '🔄 تحديث';
     });
   }
 
-  function renderTable() {
-    const search = document.getElementById('search-input').value.toLowerCase();
-    const branchFilter = document.getElementById('branch-filter').value;
-    const reasonFilter = document.getElementById('reason-filter').value;
-    
-    let filtered = allEntries.filter(e => {
-      if (branchFilter && e.branch !== branchFilter) return false;
-      if (reasonFilter && e.reason !== reasonFilter) return false;
-      if (search) return e.order.includes(search) || e.phone.includes(search);
-      return true;
-    }).sort((a,b) => b.id - a.id);
-    
-    const tbody = document.getElementById('table-body');
-    if (filtered.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">📭 لا توجد إلغاءات<td></tr>';
+  window.loadData = loadData;
+
+  // تصدير إلى Word بنفس التصميم
+  function exportToWord() {
+    if (allEntries.length === 0) {
+      alert('لا توجد بيانات للتصدير');
       return;
     }
     
-    // Update filters dropdowns
-    const branches = [...new Set(allEntries.map(e => e.branch))].sort();
-    const reasons = [...new Set(allEntries.map(e => e.reason))].sort();
-    document.getElementById('branch-filter').innerHTML = '<option value="">كل الفروع</option>' + branches.map(b => `<option value="${b}">${b}</option>`).join('');
-    document.getElementById('reason-filter').innerHTML = '<option value="">كل الأسباب</option>' + reasons.map(r => `<option value="${r}">${r}</option>`).join('');
+    const grouped = groupByBranch(allEntries);
+    const branchesWithData = branchesOrder.filter(branch => grouped[branch].length > 0);
+    const today = getTodayKey();
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
     
-    tbody.innerHTML = filtered.map((e, i) => `
-      <tr><td>${i+1}</td><td><strong>${e.order}</strong></td><td dir="ltr">${e.phone}</td>
-      <td><span class="branch-badge">${e.branch}</span></td><td><span class="reason-badge">${e.reason}</span></td>
-      <td>${e.time}</td><td>${e.date}</td></tr>
-    `).join('');
-  }
-
-  function updateStats() {
-    document.getElementById('total-count').textContent = allEntries.length;
-    document.getElementById('branch-count').textContent = [...new Set(allEntries.map(e => e.branch))].length;
-    document.getElementById('reason-count').textContent = [...new Set(allEntries.map(e => e.reason))].length;
-  }
-
-  window.loadData = loadData;
-  window.exportToExcel = function() {
-    if (allEntries.length === 0) { alert('لا توجد بيانات'); return; }
-    let csv = "الرقم,رقم الأوردر,رقم الزبون,الفرع,سبب الإلغاء,الوقت,التاريخ\n";
-    allEntries.forEach((e, i) => csv += `${i+1},${e.order},${e.phone},${e.branch},${e.reason},${e.time},${e.date}\n`);
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv" });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `تقرير_الالغاءات_${getTodayKey()}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
-  // Realtime listener
-  database.ref(`cancellations/${getTodayKey()}`).on('value', (snapshot) => {
-    if (snapshot.exists()) {
-      allEntries = Object.entries(snapshot.val()).map(([id, entry]) => ({
-        id: parseInt(id), order: entry.order, phone: entry.phone || '-',
-        branch: entry.branch, reason: entry.reason, time: entry.time, date: getTodayKey()
-      }));
-      renderTable();
-      updateStats();
-      document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ') + ' (تلقائي)';
+    let html = `<!DOCTYPE html>
+    <html dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>تقرير الإلغاءات - ${today}</title>
+      <style>
+        body { font-family: 'Segoe UI', 'Tahoma', Arial, sans-serif; margin: 30px; background: white; color: black; direction: rtl; }
+        .report-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+        .report-header h1 { font-size: 24px; margin-bottom: 5px; }
+        .report-header h3 { font-size: 18px; font-weight: normal; margin-bottom: 5px; }
+        .report-header p { font-size: 14px; color: #555; }
+        .tables-row { display: flex; gap: 30px; margin-bottom: 40px; flex-wrap: wrap; }
+        .table-wrapper { flex: 1; min-width: 300px; }
+        .branch-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+        .branch-table caption { font-size: 16px; font-weight: bold; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; border-bottom: none; text-align: center; }
+        .branch-table th, .branch-table td { border: 1px solid #ddd; padding: 8px 10px; text-align: center; }
+        .branch-table th { background: #f0f0f0; font-weight: bold; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 15px; }
+        @media print { .no-print { display: none; } }
+      </style>
+    </head>
+    <body>
+      <div class="report-header">
+        <h1>شركة عصر الشرق</h1>
+        <h3>لإدارة المطاعم</h3>
+        <h3>قسم خدمة العملاء</h3>
+        <p>التاريخ: ${dateStr}</p>
+        <hr style="margin-top: 10px;">
+      </div>
+    `;
+    
+    for (let i = 0; i < branchesWithData.length; i += 2) {
+      html += '<div class="tables-row">';
+      
+      const branch1 = branchesWithData[i];
+      if (branch1 && grouped[branch1].length > 0) {
+        const entries = grouped[branch1];
+        entries.sort((a,b) => b.id - a.id);
+        html += `
+          <div class="table-wrapper">
+            <table class="branch-table">
+              <caption>الغاء ${branch1}</caption>
+              <thead><tr><th>رقم الأوردر</th><th>السبب</th><th>رقم الزبون</th></tr></thead>
+              <tbody>
+        `;
+        entries.forEach(entry => {
+          html += `<tr><td>${entry.order}</td><td>${entry.reason}</td><td dir="ltr">${entry.phone || '—'}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+      }
+      
+      const branch2 = branchesWithData[i + 1];
+      if (branch2 && grouped[branch2].length > 0) {
+        const entries = grouped[branch2];
+        entries.sort((a,b) => b.id - a.id);
+        html += `
+          <div class="table-wrapper">
+            <table class="branch-table">
+              <caption>الغاء ${branch2}</caption>
+              <thead><tr><th>رقم الأوردر</th><th>السبب</th><th>رقم الزبون</th></tr></thead>
+              <tbody>
+        `;
+        entries.forEach(entry => {
+          html += `<tr><td>${entry.order}</td><td>${entry.reason}</td><td dir="ltr">${entry.phone || '—'}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+      }
+      
+      html += '</div>';
     }
-  });
-
-  document.getElementById('search-input').addEventListener('input', renderTable);
-  document.getElementById('branch-filter').addEventListener('change', renderTable);
-  document.getElementById('reason-filter').addEventListener('change', renderTable);
+    
+    html += `
+      <div class="footer">
+        <p>إجمالي الإلغاءات: ${allEntries.length}</p>
+        <p>تم التصدير بتاريخ: ${new Date().toLocaleString('ar-IQ')}</p>
+      </div>
+    </body>
+    </html>`;
+    
+    const blob = new Blob([html], { type: 'application/msword' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `تقرير_الالغاءات_${today}.doc`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
   
+  window.exportToWord = exportToWord;
+
+  // استماع للتحديثات المباشرة من Firebase
+  function listenToRealtime() {
+    const todayKey = getTodayKey();
+    database.ref(`cancellations/${todayKey}`).on('value', (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        allEntries = Object.entries(data).map(([id, entry]) => ({
+          id: parseInt(id),
+          order: entry.order || '-',
+          phone: entry.phone || '-',
+          branch: entry.branch || '-',
+          reason: entry.reason || '-',
+          time: entry.time || '-',
+          date: todayKey
+        }));
+        renderTables();
+      }
+    });
+  }
+
+  // بحث فوري
+  document.getElementById('search-input').addEventListener('input', renderTables);
+  
+  // تهيئة الصفحة
+  displayDate();
+  listenToRealtime();
   loadData();
 </script>
 </body>
