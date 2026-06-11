@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الإلغاءات - نسخة اختبار</title>
+<title>تسجيل الإلغاءات - مزامنة فورية</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -219,16 +219,18 @@
 </div>
 
 <script>
-  // Firebase Configuration - تأكد من صحة الرابط
+  // Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
     authDomain: "cansel-9df25.firebaseapp.com",
     projectId: "cansel-9df25",
-    databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"  // تأكد من هذا الرابط
+    databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"
   };
   
-  let database;
+  // انتظر تحميل Firebase SDK أولاً
+  let database = null;
   let currentEntries = [];
+  let firebaseReady = false;
   
   function getTodayKey() {
     const d = new Date();
@@ -280,10 +282,9 @@
     }
   };
   
-  // اختبار الاتصال
   window.testFirebase = async function() {
-    if (!database) {
-      showToast('⚠️ Firebase غير مهيأ', true);
+    if (!firebaseReady || !database) {
+      showToast('⚠️ Firebase غير جاهز بعد، انتظر قليلاً', true);
       return;
     }
     
@@ -306,7 +307,7 @@
   };
   
   async function saveToFirebase(entry) {
-    if (!database) return false;
+    if (!firebaseReady || !database) return false;
     try {
       const path = `cancellations/${getTodayKey()}/${entry.id}`;
       await database.ref(path).set(entry);
@@ -319,7 +320,7 @@
   }
   
   async function loadFromFirebase() {
-    if (!database) return [];
+    if (!firebaseReady || !database) return [];
     try {
       const snapshot = await database.ref(`cancellations/${getTodayKey()}`).once('value');
       if (snapshot.exists()) {
@@ -333,7 +334,7 @@
   }
   
   function listenToFirebase() {
-    if (!database) return;
+    if (!firebaseReady || !database) return;
     const path = `cancellations/${getTodayKey()}`;
     database.ref(path).on('value', (snapshot) => {
       if (snapshot.exists()) {
@@ -365,6 +366,11 @@
     if (!order) { showToast('⚠️ رقم الأوردر مطلوب', true); return; }
     if (!branch) { showToast('⚠️ الفرع مطلوب', true); return; }
     if (!reason) { showToast('⚠️ السبب مطلوب', true); return; }
+    
+    if (!firebaseReady) {
+      showToast('⚠️ Firebase غير جاهز، انتظر قليلاً', true);
+      return;
+    }
     
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ar-IQ', {hour:'2-digit', minute:'2-digit'});
@@ -477,7 +483,7 @@
       entries.forEach((e, i) => {
         html += `<tr><td>${i+1}</td><td>${e.order}</td><td dir="ltr">${e.phone || '—'}</td><td>${e.reason}</td><td>${e.time}</td></tr>`;
       });
-      html += `</tbody>}</div>`;
+      html += `</tbody></table></div>`;
     }
     html += `<p style="text-align:center">إجمالي الإلغاءات: ${currentEntries.length}</p></body></html>`;
     
@@ -533,31 +539,38 @@
     }
   };
   
-  // Initialize
-  async function init() {
+  // Initialize Firebase after SDK loads
+  function initFirebase() {
     try {
-      setSyncStatus('syncing', '☁️ جاري الاتصال...');
-      
-      firebase.initializeApp(firebaseConfig);
-      database = firebase.database();
-      
-      // Test connection
-      const testRef = database.ref('.info/connected');
-      testRef.on('value', (snap) => {
-        if (snap.val() === true) {
-          console.log("✅ Connected to Firebase");
-          setSyncStatus('synced');
-          loadInitialData();
-        } else {
-          console.log("❌ Disconnected from Firebase");
-          setSyncStatus('error', '❌ لا يوجد اتصال');
-        }
-      });
-      
+      if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        firebaseReady = true;
+        console.log("✅ Firebase initialized");
+        setSyncStatus('synced');
+        
+        // Check connection
+        const connectedRef = database.ref('.info/connected');
+        connectedRef.on('value', (snap) => {
+          if (snap.val() === true) {
+            console.log("✅ Connected to Firebase");
+            setSyncStatus('synced');
+            loadInitialData();
+            listenToFirebase();
+          } else {
+            console.log("❌ Disconnected");
+            setSyncStatus('error', '❌ غير متصل');
+          }
+        });
+      } else {
+        console.error("Firebase SDK not loaded");
+        setSyncStatus('error', '❌ خطأ في التحميل');
+        setTimeout(initFirebase, 1000);
+      }
     } catch(e) {
       console.error("Init error:", e);
       setSyncStatus('error', '❌ خطأ في التهيئة');
-      showToast('❌ فشل تهيئة Firebase: ' + e.message, true);
+      setTimeout(initFirebase, 1000);
     }
   }
   
@@ -569,18 +582,22 @@
         currentEntries.sort((a,b) => a.id - b.id);
         updateCounter();
       }
-      listenToFirebase();
     } catch(e) {
       console.error("Load initial error:", e);
     }
   }
   
-  // Start
-  init();
+  // Start after DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    currentEntries = [];
+    updateCounter();
+    initFirebase();
+  });
 </script>
 
-<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js"></script>
+<!-- Firebase SDK - الروابط الصحيحة -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 </body>
 </html>
