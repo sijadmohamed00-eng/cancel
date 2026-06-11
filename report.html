@@ -15,12 +15,12 @@
     font-family: 'Segoe UI', 'Tahoma', Arial, sans-serif;
     background: #fff;
     color: #000;
-    padding: 30px;
+    padding: 20px;
     direction: rtl;
   }
 
   .container {
-    max-width: 1200px;
+    max-width: 100%;
     margin: 0 auto;
   }
 
@@ -33,12 +33,12 @@
   }
 
   .report-header h1 {
-    font-size: 24px;
+    font-size: 22px;
     margin-bottom: 5px;
   }
 
   .report-header h3 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: normal;
     margin-bottom: 5px;
   }
@@ -48,60 +48,7 @@
     color: #555;
   }
 
-  /* جدولين متجاورين */
-  .tables-row {
-    display: flex;
-    gap: 30px;
-    margin-bottom: 40px;
-    flex-wrap: wrap;
-  }
-
-  .table-wrapper {
-    flex: 1;
-    min-width: 300px;
-  }
-
-  /* تصميم الجدول نفس الصورة */
-  .branch-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-    font-size: 13px;
-  }
-
-  .branch-table caption {
-    font-size: 16px;
-    font-weight: bold;
-    padding: 10px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    border-bottom: none;
-    text-align: center;
-  }
-
-  .branch-table th,
-  .branch-table td {
-    border: 1px solid #ddd;
-    padding: 8px 10px;
-    text-align: center;
-  }
-
-  .branch-table th {
-    background: #f0f0f0;
-    font-weight: bold;
-  }
-
-  .branch-table td {
-    background: #fff;
-  }
-
-  /* تنسيق خاص لخلية "الغاء فرع" */
-  .branch-caption {
-    background: #e8e8e8;
-    font-weight: bold;
-  }
-
-  /* زر التحكم */
+  /* أزرار التحكم */
   .controls {
     margin-bottom: 20px;
     display: flex;
@@ -109,7 +56,7 @@
     flex-wrap: wrap;
     align-items: center;
     background: #f5f5f5;
-    padding: 15px;
+    padding: 12px 15px;
     border-radius: 8px;
   }
 
@@ -144,6 +91,73 @@
     background: #16a34a !important;
   }
 
+  /* كل فرع في قسم منفصل */
+  .branch-section {
+    margin-bottom: 35px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+
+  .branch-header {
+    background: #1B52C4;
+    color: white;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .branch-header h2 {
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .branch-count {
+    background: #f59e0b;
+    color: #000;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  /* الجدول بنفس التنسيق المطلوب */
+  .branch-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .branch-table th,
+  .branch-table td {
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    text-align: center;
+  }
+
+  .branch-table th {
+    background: #f0f0f0;
+    font-weight: bold;
+  }
+
+  .branch-table td {
+    background: #fff;
+  }
+
+  /* عمود الرقم المسلسل */
+  .serial-col {
+    width: 50px;
+    background: #f9f9f9;
+  }
+
+  .empty-row td {
+    text-align: center;
+    padding: 30px;
+    color: #999;
+  }
+
   .footer {
     margin-top: 30px;
     text-align: center;
@@ -155,12 +169,12 @@
 
   @media print {
     body {
-      padding: 15px;
+      padding: 10px;
     }
     .controls {
       display: none;
     }
-    .branch-table {
+    .branch-section {
       break-inside: avoid;
     }
   }
@@ -175,7 +189,7 @@
     <h3>لإدارة المطاعم</h3>
     <h3>قسم خدمة العملاء</h3>
     <p>التاريخ: <span id="report-date"></span></p>
-    <hr style="margin-top: 10px;">
+    <hr>
   </div>
 
   <!-- أزرار التحكم -->
@@ -186,8 +200,8 @@
     <button onclick="window.print()" class="btn-print">🖨️ طباعة</button>
   </div>
 
-  <!-- هنا سيتم عرض الجداول -->
-  <div id="tables-container"></div>
+  <!-- هنا سيتم عرض الأفرع -->
+  <div id="branches-container"></div>
 
   <div class="footer">
     آخر تحديث: <span id="last-update">-</span>
@@ -210,7 +224,7 @@
 
   let allEntries = [];
 
-  // قائمة الفروع بالترتيب المطلوب
+  // قائمة الفروع بالترتيب
   const branchesOrder = [
     "فرع الشعب", "فرع البنوك", "فرع الغدير", "فرع الحرية",
     "فرع الدورة", "فرع بسماية", "فرع الغزالية", "فرع الأعظمية",
@@ -229,7 +243,7 @@
     document.getElementById('report-date').textContent = dateStr;
   }
 
-  // تجميع الإلغاءات حسب الفرع
+  // تجميع حسب الفرع
   function groupByBranch(entries) {
     const grouped = {};
     branchesOrder.forEach(branch => { grouped[branch] = []; });
@@ -243,8 +257,8 @@
     return grouped;
   }
 
-  // عرض الجداول - نفس تصميم الصورة (جدولين متجاورين)
-  function renderTables() {
+  // عرض الأفرع - كل فرع لوحده
+  function renderBranches() {
     const searchText = document.getElementById('search-input').value.toLowerCase();
     let filtered = allEntries;
     
@@ -256,79 +270,65 @@
     }
     
     const grouped = groupByBranch(filtered);
-    const container = document.getElementById('tables-container');
-    
-    // تحويل الفروع إلى مصفوفة للعرض في صفوف (جدولين يمين ويسار)
-    const branchesWithData = branchesOrder.filter(branch => grouped[branch].length > 0);
+    const container = document.getElementById('branches-container');
     
     let html = '';
+    let totalCancellations = 0;
     
-    // عرض الفروع في أزواج (جدولين جنب بعض)
-    for (let i = 0; i < branchesWithData.length; i += 2) {
-      html += '<div class="tables-row">';
-      
-      // الجدول الأول (اليمين)
-      const branch1 = branchesWithData[i];
-      if (branch1) {
-        html += generateBranchTable(branch1, grouped[branch1]);
+    for (const branch of branchesOrder) {
+      const entries = grouped[branch];
+      if (entries.length > 0) {
+        totalCancellations += entries.length;
+        entries.sort((a, b) => b.id - a.id);
+        
+        html += `
+          <div class="branch-section">
+            <div class="branch-header">
+              <h2>🏪 ${branch}</h2>
+              <span class="branch-count">${entries.length} إلغاء</span>
+            </div>
+            <table class="branch-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>رقم الأوردر</th>
+                  <th>السبب</th>
+                  <th>رقم الزبون</th>
+                  <th>الوقت</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        entries.forEach((entry, idx) => {
+          // تحويل الوقت إلى صيغة العربية إذا لزم
+          let timeDisplay = entry.time || '--:--';
+          
+          html += `
+            <tr>
+              <td class="serial-col">${idx + 1}</td>
+              <td><strong>${entry.order}</strong></td>
+              <td>${entry.reason}</td>
+              <td dir="ltr">${entry.phone || '—'}</td>
+              <td>${timeDisplay}</td>
+            </tr>
+          `;
+        });
+        
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
       }
-      
-      // الجدول الثاني (اليسار)
-      const branch2 = branchesWithData[i + 1];
-      if (branch2) {
-        html += generateBranchTable(branch2, grouped[branch2]);
-      }
-      
-      html += '</div>';
     }
     
-    if (branchesWithData.length === 0) {
+    if (totalCancellations === 0) {
       html = '<div style="text-align:center; padding:50px; background:#f5f5f5; border-radius:10px;">📭 لا توجد إلغاءات مسجلة اليوم</div>';
     }
     
     container.innerHTML = html;
-    
-    // تحديث الإحصائيات
     document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ');
-  }
-  
-  // إنشاء جدول فرع واحد بنفس تصميم الصورة
-  function generateBranchTable(branchName, entries) {
-    if (!entries || entries.length === 0) return '';
-    
-    entries.sort((a, b) => b.id - a.id);
-    
-    let tableHtml = `
-      <div class="table-wrapper">
-        <table class="branch-table" cellspacing="0">
-          <caption>الغاء ${branchName}</caption>
-          <thead>
-            <tr>
-              <th>رقم الأوردر</th>
-              <th>السبب</th>
-              <th>رقم الزبون</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-    
-    entries.forEach(entry => {
-      tableHtml += `
-        <tr>
-          <td>${entry.order}</td>
-          <td>${entry.reason}</td>
-          <td dir="ltr">${entry.phone || '—'}</td>
-        </tr>
-      `;
-    });
-    
-    tableHtml += `
-          </tbody>
-        </table>
-      </div>
-    `;
-    
-    return tableHtml;
   }
 
   // تحميل البيانات من Firebase
@@ -349,26 +349,25 @@
           date: getTodayKey()
         }));
       } else {
-        // محاولة التحميل من sessionStorage كنسخة احتياطية
         const saved = sessionStorage.getItem('current_cancel_entries');
         allEntries = saved ? JSON.parse(saved) : [];
       }
       
-      renderTables();
+      renderBranches();
       refreshBtn.textContent = '🔄 تحديث';
       
     }).catch(err => {
       console.error("Load error:", err);
       const saved = sessionStorage.getItem('current_cancel_entries');
       allEntries = saved ? JSON.parse(saved) : [];
-      renderTables();
+      renderBranches();
       refreshBtn.textContent = '🔄 تحديث';
     });
   }
 
   window.loadData = loadData;
 
-  // تصدير إلى Word بنفس التصميم
+  // تصدير إلى Word بنفس التنسيق
   function exportToWord() {
     if (allEntries.length === 0) {
       alert('لا توجد بيانات للتصدير');
@@ -376,7 +375,6 @@
     }
     
     const grouped = groupByBranch(allEntries);
-    const branchesWithData = branchesOrder.filter(branch => grouped[branch].length > 0);
     const today = getTodayKey();
     const now = new Date();
     const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
@@ -389,17 +387,18 @@
       <style>
         body { font-family: 'Segoe UI', 'Tahoma', Arial, sans-serif; margin: 30px; background: white; color: black; direction: rtl; }
         .report-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
-        .report-header h1 { font-size: 24px; margin-bottom: 5px; }
-        .report-header h3 { font-size: 18px; font-weight: normal; margin-bottom: 5px; }
+        .report-header h1 { font-size: 22px; margin-bottom: 5px; }
+        .report-header h3 { font-size: 16px; font-weight: normal; margin-bottom: 5px; }
         .report-header p { font-size: 14px; color: #555; }
-        .tables-row { display: flex; gap: 30px; margin-bottom: 40px; flex-wrap: wrap; }
-        .table-wrapper { flex: 1; min-width: 300px; }
-        .branch-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
-        .branch-table caption { font-size: 16px; font-weight: bold; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; border-bottom: none; text-align: center; }
+        .branch-section { margin-bottom: 35px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; page-break-inside: avoid; }
+        .branch-header { background: #1B52C4; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .branch-header h2 { font-size: 16px; margin: 0; }
+        .branch-count { background: #f59e0b; color: #000; padding: 3px 10px; border-radius: 20px; font-size: 12px; }
+        .branch-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .branch-table th, .branch-table td { border: 1px solid #ddd; padding: 8px 10px; text-align: center; }
-        .branch-table th { background: #f0f0f0; font-weight: bold; }
+        .branch-table th { background: #f0f0f0; }
+        .serial-col { width: 50px; }
         .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 15px; }
-        @media print { .no-print { display: none; } }
       </style>
     </head>
     <body>
@@ -408,48 +407,43 @@
         <h3>لإدارة المطاعم</h3>
         <h3>قسم خدمة العملاء</h3>
         <p>التاريخ: ${dateStr}</p>
-        <hr style="margin-top: 10px;">
+        <hr>
       </div>
     `;
     
-    for (let i = 0; i < branchesWithData.length; i += 2) {
-      html += '<div class="tables-row">';
-      
-      const branch1 = branchesWithData[i];
-      if (branch1 && grouped[branch1].length > 0) {
-        const entries = grouped[branch1];
-        entries.sort((a,b) => b.id - a.id);
+    for (const branch of branchesOrder) {
+      const entries = grouped[branch];
+      if (entries.length > 0) {
+        entries.sort((a, b) => b.id - a.id);
         html += `
-          <div class="table-wrapper">
+          <div class="branch-section">
+            <div class="branch-header">
+              <h2>🏪 ${branch}</h2>
+              <span class="branch-count">${entries.length} إلغاء</span>
+            </div>
             <table class="branch-table">
-              <caption>الغاء ${branch1}</caption>
-              <thead><tr><th>رقم الأوردر</th><th>السبب</th><th>رقم الزبون</th></tr></thead>
+              <thead>
+                <tr><th>#</th><th>رقم الأوردر</th><th>السبب</th><th>رقم الزبون</th><th>الوقت</th></tr>
+              </thead>
               <tbody>
         `;
-        entries.forEach(entry => {
-          html += `<tr><td>${entry.order}</td><td>${entry.reason}</td><td dir="ltr">${entry.phone || '—'}</td></tr>`;
+        entries.forEach((entry, idx) => {
+          html += `
+            <tr>
+              <td class="serial-col">${idx + 1}</td>
+              <td>${entry.order}</td>
+              <td>${entry.reason}</td>
+              <td dir="ltr">${entry.phone || '—'}</td>
+              <td>${entry.time || '--:--'}</td>
+            </tr>
+          `;
         });
-        html += `</tbody></table></div>`;
-      }
-      
-      const branch2 = branchesWithData[i + 1];
-      if (branch2 && grouped[branch2].length > 0) {
-        const entries = grouped[branch2];
-        entries.sort((a,b) => b.id - a.id);
         html += `
-          <div class="table-wrapper">
-            <table class="branch-table">
-              <caption>الغاء ${branch2}</caption>
-              <thead><tr><th>رقم الأوردر</th><th>السبب</th><th>رقم الزبون</th></tr></thead>
-              <tbody>
+              </tbody>
+            </table>
+          </div>
         `;
-        entries.forEach(entry => {
-          html += `<tr><td>${entry.order}</td><td>${entry.reason}</td><td dir="ltr">${entry.phone || '—'}</td></tr>`;
-        });
-        html += `</tbody></table></div>`;
       }
-      
-      html += '</div>';
     }
     
     html += `
@@ -470,7 +464,7 @@
   
   window.exportToWord = exportToWord;
 
-  // استماع للتحديثات المباشرة من Firebase
+  // استماع للتحديثات المباشرة
   function listenToRealtime() {
     const todayKey = getTodayKey();
     database.ref(`cancellations/${todayKey}`).on('value', (snapshot) => {
@@ -485,13 +479,13 @@
           time: entry.time || '-',
           date: todayKey
         }));
-        renderTables();
+        renderBranches();
       }
     });
   }
 
   // بحث فوري
-  document.getElementById('search-input').addEventListener('input', renderTables);
+  document.getElementById('search-input').addEventListener('input', renderBranches);
   
   // تهيئة الصفحة
   displayDate();
