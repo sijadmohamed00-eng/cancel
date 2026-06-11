@@ -533,20 +533,40 @@
 
   window.generateWordReport = function() {
     if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
+
+    // ترتيب الفروع بنفس تسلسل القائمة
+    const BRANCH_ORDER = [
+      'فرع الشعب','فرع البنوك','فرع الغدير','فرع الحرية',
+      'فرع الدورة','فرع بسماية','فرع الغزالية','فرع الأعظمية',
+      'فرع حي العامل','فرع البوعيثة','فرع حي الجهاد','فرع شهداء البياع'
+    ];
+
     const grouped = {};
     currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
+
+    // رتب الفروع حسب التسلسل، والفروع غير الموجودة في القائمة تجي في الآخر
+    const sortedBranches = BRANCH_ORDER.filter(b => grouped[b])
+      .concat(Object.keys(grouped).filter(b => !BRANCH_ORDER.includes(b)));
+
     const today = new Date().toLocaleDateString('ar-IQ');
+    const TH = 'border:2px solid #333;padding:5px 10px;color:#cc0000;text-align:center;font-size:11pt;background:#fff;';
+    const TD = 'border:1.5px solid #555;padding:5px 10px;text-align:center;font-size:11pt;';
+
     let tablesHtml = '';
-    for (const [branch, entries] of Object.entries(grouped)) {
+    for (const branch of sortedBranches) {
+      const entries = grouped[branch];
       let rows = entries.map(e => `<tr>
-        <td style="font-weight:bold;direction:ltr;">${e.phone||''}</td>
-        <td>${e.reason}</td><td>${e.order}</td></tr>`).join('');
-      tablesHtml += `<div style="margin-bottom:24px;">
-        <table dir="rtl" style="width:100%;border-collapse:collapse;font-family:Arial;font-size:11pt;">
+        <td style="${TD}">${e.order}</td>
+        <td style="${TD}">${e.reason}</td>
+        <td style="${TD}font-weight:bold;direction:ltr;">${e.phone||''}</td>
+      </tr>`).join('');
+      tablesHtml += `<div style="margin-bottom:20px;">
+        <table dir="rtl" style="width:100%;border-collapse:collapse;font-family:Arial;table-layout:fixed;">
+          <colgroup><col style="width:40%;"><col style="width:35%;"><col style="width:25%;"></colgroup>
           <thead><tr>
-            <th style="border:2px solid #333;padding:5px 8px;color:#cc0000;text-align:center;">الرقم</th>
-            <th style="border:2px solid #333;padding:5px 8px;color:#cc0000;text-align:center;">الغاء ${branch} ـ</th>
-            <th style="border:2px solid #333;padding:5px 8px;color:#cc0000;text-align:center;">رقم الاوردر</th>
+            <th style="${TH}">رقم الاوردر</th>
+            <th style="${TH}">الغاء ${branch} ـ</th>
+            <th style="${TH}">رقم الزبون</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table></div>`;
