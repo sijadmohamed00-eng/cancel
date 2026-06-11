@@ -5,59 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تقرير الإلغاءات</title>
 <style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Segoe UI', 'Tahoma', Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background: #fff;
     color: #000;
     padding: 20px;
     direction: rtl;
   }
-
-  .container {
-    max-width: 100%;
-    margin: 0 auto;
-  }
-
+  .container { max-width: 100%; margin: 0 auto; }
   .report-header {
     text-align: center;
     margin-bottom: 30px;
     border-bottom: 2px solid #000;
     padding-bottom: 15px;
   }
-
-  .report-header h1 {
-    font-size: 22px;
-    margin-bottom: 5px;
-  }
-
-  .report-header h3 {
-    font-size: 16px;
-    font-weight: normal;
-    margin-bottom: 5px;
-  }
-
-  .report-header p {
-    font-size: 14px;
-    color: #555;
-  }
-
+  .report-header h1 { font-size: 22px; margin-bottom: 5px; }
+  .report-header h3 { font-size: 16px; font-weight: normal; margin-bottom: 5px; }
+  .report-header p { font-size: 14px; color: #555; }
   .controls {
     margin-bottom: 20px;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    align-items: center;
     background: #f5f5f5;
     padding: 12px 15px;
     border-radius: 8px;
   }
-
   .controls input {
     padding: 8px 12px;
     border: 1px solid #ddd;
@@ -66,7 +40,6 @@
     flex: 1;
     min-width: 150px;
   }
-
   .controls button {
     padding: 8px 16px;
     background: #1B52C4;
@@ -76,27 +49,14 @@
     cursor: pointer;
     font-size: 13px;
   }
-
-  .controls button:hover {
-    opacity: 0.9;
-  }
-
-  .btn-export {
-    background: #dc2626 !important;
-  }
-
-  .btn-print {
-    background: #16a34a !important;
-  }
-
+  .btn-export { background: #dc2626 !important; }
+  .btn-print { background: #16a34a !important; }
   .branch-section {
     margin-bottom: 35px;
     border: 1px solid #ddd;
     border-radius: 8px;
     overflow: hidden;
-    page-break-inside: avoid;
   }
-
   .branch-header {
     background: #1B52C4;
     color: white;
@@ -105,12 +65,7 @@
     justify-content: space-between;
     align-items: center;
   }
-
-  .branch-header h2 {
-    font-size: 16px;
-    margin: 0;
-  }
-
+  .branch-header h2 { font-size: 16px; margin: 0; }
   .branch-count {
     background: #f59e0b;
     color: #000;
@@ -119,35 +74,20 @@
     font-size: 12px;
     font-weight: bold;
   }
-
-  /* ترتيب الأعمدة: # | رقم الأوردر | السبب | رقم الزبون */
   .branch-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
   }
-
-  .branch-table th,
-  .branch-table td {
+  .branch-table th, .branch-table td {
     border: 1px solid #ddd;
     padding: 8px 10px;
     text-align: center;
   }
-
   .branch-table th {
     background: #f0f0f0;
     font-weight: bold;
   }
-
-  .branch-table td {
-    background: #fff;
-  }
-
-  .serial-col {
-    width: 50px;
-    background: #f9f9f9;
-  }
-
   .footer {
     margin-top: 30px;
     text-align: center;
@@ -156,17 +96,9 @@
     border-top: 1px solid #ddd;
     padding-top: 15px;
   }
-
   @media print {
-    body {
-      padding: 10px;
-    }
-    .controls {
-      display: none;
-    }
-    .branch-section {
-      break-inside: avoid;
-    }
+    .controls { display: none; }
+    .branch-section { break-inside: avoid; }
   }
 </style>
 </head>
@@ -227,20 +159,6 @@
     document.getElementById('report-date').textContent = dateStr;
   }
 
-  function groupByBranch(entries) {
-    const grouped = {};
-    branchesOrder.forEach(branch => { grouped[branch] = []; });
-    entries.forEach(entry => {
-      if (grouped[entry.branch]) {
-        grouped[entry.branch].push(entry);
-      } else {
-        grouped[entry.branch] = [entry];
-      }
-    });
-    return grouped;
-  }
-
-  // التعديل الرئيسي هنا - ترتيب الأعمدة الصحيح بدون وقت
   function renderBranches() {
     const searchText = document.getElementById('search-input').value.toLowerCase();
     let filtered = allEntries;
@@ -252,9 +170,17 @@
       );
     }
     
-    const grouped = groupByBranch(filtered);
-    const container = document.getElementById('branches-container');
+    const grouped = {};
+    branchesOrder.forEach(branch => { grouped[branch] = []; });
+    filtered.forEach(entry => {
+      if (grouped[entry.branch]) {
+        grouped[entry.branch].push(entry);
+      } else {
+        grouped[entry.branch] = [entry];
+      }
+    });
     
+    const container = document.getElementById('branches-container');
     let html = '';
     let totalCancellations = 0;
     
@@ -262,7 +188,7 @@
       const entries = grouped[branch];
       if (entries.length > 0) {
         totalCancellations += entries.length;
-        entries.sort((a, b) => b.id - a.id);
+        entries.sort((a, b) => a.id - b.id);
         
         html += `
           <div class="branch-section">
@@ -273,10 +199,10 @@
             <table class="branch-table">
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th style="width:50px">#</th>
                   <th>رقم الأوردر</th>
-                  <th>السبب</th>
                   <th>رقم الزبون</th>
+                  <th>السبب</th>
                 </tr>
               </thead>
               <tbody>
@@ -286,10 +212,10 @@
           const entry = entries[idx];
           html += `
             <tr>
-              <td class="serial-col">${idx + 1}</td>
+              <td>${idx + 1}</td>
               <td><strong>${entry.order}</strong></td>
-              <td>${entry.reason}</td>
               <td dir="ltr">${entry.phone || '—'}</td>
+              <td>${entry.reason}</td>
             </tr>
           `;
         }
@@ -323,8 +249,6 @@
           phone: entry.phone || '-',
           branch: entry.branch || '-',
           reason: entry.reason || '-',
-          time: entry.time || '-',
-          date: getTodayKey()
         }));
       } else {
         const saved = sessionStorage.getItem('current_cancel_entries');
@@ -351,7 +275,16 @@
       return;
     }
     
-    const grouped = groupByBranch(allEntries);
+    const grouped = {};
+    branchesOrder.forEach(branch => { grouped[branch] = []; });
+    allEntries.forEach(entry => {
+      if (grouped[entry.branch]) {
+        grouped[entry.branch].push(entry);
+      } else {
+        grouped[entry.branch] = [entry];
+      }
+    });
+    
     const today = getTodayKey();
     const now = new Date();
     const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
@@ -362,9 +295,9 @@
       <meta charset="UTF-8">
       <title>تقرير الإلغاءات - ${today}</title>
       <style>
-        body { font-family: 'Segoe UI', 'Tahoma', Arial, sans-serif; margin: 30px; background: white; color: black; direction: rtl; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; background: white; color: black; direction: rtl; }
         .report-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
-        .report-header h1 { font-size: 22px; margin-bottom: 5px; }
+        .report-header h1 { font-size: 22px; margin-bottom: 5px; color: #1B52C4; }
         .report-header h3 { font-size: 16px; font-weight: normal; margin-bottom: 5px; }
         .report-header p { font-size: 14px; color: #555; }
         .branch-section { margin-bottom: 35px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; page-break-inside: avoid; }
@@ -374,7 +307,6 @@
         .branch-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .branch-table th, .branch-table td { border: 1px solid #ddd; padding: 8px 10px; text-align: center; }
         .branch-table th { background: #f0f0f0; }
-        .serial-col { width: 50px; }
         .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 15px; }
       </style>
     </head>
@@ -391,7 +323,7 @@
     for (const branch of branchesOrder) {
       const entries = grouped[branch];
       if (entries.length > 0) {
-        entries.sort((a, b) => b.id - a.id);
+        entries.sort((a, b) => a.id - b.id);
         html += `
           <div class="branch-section">
             <div class="branch-header">
@@ -400,17 +332,22 @@
             </div>
             <table class="branch-table">
               <thead>
-                <tr><th>#</th><th>رقم الأوردر</th><th>السبب</th><th>رقم الزبون</th></tr>
+                <tr>
+                  <th style="width:50px">#</th>
+                  <th>رقم الأوردر</th>
+                  <th>رقم الزبون</th>
+                  <th>السبب</th>
+                </tr>
               </thead>
               <tbody>
         `;
         entries.forEach((entry, idx) => {
           html += `
             <tr>
-              <td class="serial-col">${idx + 1}</td>
+              <td>${idx + 1}</td>
               <td>${entry.order}</td>
-              <td>${entry.reason}</td>
               <td dir="ltr">${entry.phone || '—'}</td>
+              <td>${entry.reason}</td>
             </tr>
           `;
         });
@@ -451,8 +388,6 @@
           phone: entry.phone || '-',
           branch: entry.branch || '-',
           reason: entry.reason || '-',
-          time: entry.time || '-',
-          date: todayKey
         }));
         renderBranches();
       }
