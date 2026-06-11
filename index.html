@@ -6,7 +6,6 @@
 <title>تسجيل الإلغاءات</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background: #10132a;
@@ -15,26 +14,21 @@
     overflow: hidden;
     user-select: none;
   }
-
   .header {
     background: linear-gradient(135deg, #1B52C4, #0d3a8a);
     padding: 5px 7px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    cursor: move;
     border-bottom: 1px solid #4A9EFF33;
   }
-
   .header-title { font-size: 10px; font-weight: 700; color: #fff; }
-
   .body {
     padding: 6px 6px 5px;
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
-
   label {
     font-size: 9px;
     color: #4A9EFF;
@@ -42,7 +36,6 @@
     display: block;
     margin-bottom: 1px;
   }
-
   input[type="text"], select {
     width: 100%;
     background: #0a1228;
@@ -56,14 +49,10 @@
     direction: rtl;
     transition: border-color 0.2s;
   }
-
   input[type="text"]:focus, select:focus { border-color: #4A9EFF; }
-
   select option { background: #0a1228; }
-
   .custom-reason { display: none; margin-top: 3px; }
   .custom-reason.visible { display: block; }
-
   .btn-send {
     width: 100%;
     background: linear-gradient(135deg, #1B52C4, #4A9EFF);
@@ -78,9 +67,8 @@
     font-family: inherit;
     transition: opacity 0.15s;
   }
-
-  .btn-send:active { opacity: 0.8; }
-
+  .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-send:active:not(:disabled) { opacity: 0.8; }
   .btn-report {
     width: 100%;
     background: transparent;
@@ -93,22 +81,27 @@
     cursor: pointer;
     font-family: inherit;
   }
-
   .btn-report:hover { background: #4A9EFF11; }
-
   .counter {
     text-align: center;
     font-size: 9px;
     color: #4A9EFF99;
     padding: 1px 0;
   }
-
+  .status {
+    text-align: center;
+    font-size: 8.5px;
+    padding: 2px 0;
+    border-radius: 3px;
+  }
+  .status.connecting { color: #f59e0b; }
+  .status.connected  { color: #22c55e; }
+  .status.error      { color: #ef4444; }
   .toast {
     position: fixed;
     bottom: 5px;
     left: 4px;
     right: 4px;
-    background: #16a34a;
     color: #fff;
     font-size: 10px;
     text-align: center;
@@ -119,20 +112,21 @@
     pointer-events: none;
     z-index: 99;
   }
-
   .toast.show { opacity: 1; }
-
+  .toast.success { background: #16a34a; }
+  .toast.fail    { background: #dc2626; }
   hr { border: none; border-top: 1px solid #1B52C422; margin: 2px 0; }
 </style>
 </head>
 <body>
 
-<div class="header" id="drag-handle">
+<div class="header">
   <span class="header-title">🚫 تسجيل إلغاء</span>
-  <span style="font-size:10px">📋</span>
+  <span style="font-size:10px">☁️</span>
 </div>
 
 <div class="body">
+  <div class="status connecting" id="status">⏳ جاري الاتصال...</div>
 
   <div>
     <label>رقم الأوردر *</label>
@@ -181,123 +175,156 @@
 
   <hr>
 
-  <button class="btn-send" onclick="sendEntry()">📋 حفظ + نسخ للواتساب</button>
-  <div class="counter" id="counter">الإلغاءات اليوم: 0</div>
+  <button class="btn-send" id="btn-send" onclick="sendEntry()" disabled>📋 حفظ + نسخ للواتساب</button>
+  <div class="counter" id="counter">الإلغاءات اليوم: —</div>
   <button class="btn-report" onclick="openReport()">📊 فتح التقرير</button>
-
 </div>
 
-<div class="toast" id="toast">✅ تم الحفظ والنسخ!</div>
+<div class="toast" id="toast"></div>
 
-<script>
-  const STORAGE_KEY = 'cancel_entries_v1';
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, query, where,
+    getDocs, onSnapshot, serverTimestamp, Timestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  function getTodayKey() {
-    const d = new Date();
-    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  const firebaseConfig = {
+    apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
+    authDomain: "cansel-9df25.firebaseapp.com",
+    projectId: "cansel-9df25",
+    storageBucket: "cansel-9df25.firebasestorage.app",
+    messagingSenderId: "1056776938370",
+    appId: "1:1056776938370:web:79c3d830fc2f37debfa59b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const col = collection(db, "cancellations");
+
+  const statusEl  = document.getElementById('status');
+  const counterEl = document.getElementById('counter');
+  const btnSend   = document.getElementById('btn-send');
+
+  // ─── Live counter: today's entries ───────────────────────────
+  function getTodayRange() {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    return {
+      start: Timestamp.fromDate(start),
+      end:   Timestamp.fromDate(end)
+    };
   }
 
-  function load() {
-    try {
-      const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return all[getTodayKey()] || [];
-    } catch { return []; }
+  try {
+    const { start, end } = getTodayRange();
+    const q = query(col,
+      where("createdAt", ">=", start),
+      where("createdAt", "<=", end)
+    );
+
+    onSnapshot(q, (snap) => {
+      counterEl.textContent = `الإلغاءات اليوم: ${snap.size}`;
+      statusEl.textContent  = '🟢 متصل';
+      statusEl.className    = 'status connected';
+      btnSend.disabled      = false;
+    }, (err) => {
+      statusEl.textContent = '🔴 خطأ في الاتصال';
+      statusEl.className   = 'status error';
+      console.error(err);
+    });
+  } catch(e) {
+    statusEl.textContent = '🔴 خطأ في الاتصال';
+    statusEl.className   = 'status error';
   }
 
-  function save(entries) {
-    try {
-      const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      all[getTodayKey()] = entries;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    } catch {}
-  }
-
-  function updateCounter() {
-    document.getElementById('counter').textContent = `الإلغاءات اليوم: ${load().length}`;
-  }
-
-  function toggleCustom() {
+  // ─── Helpers ─────────────────────────────────────────────────
+  window.toggleCustom = function() {
     const sel = document.getElementById('reason');
     document.getElementById('custom-wrap').classList.toggle('visible', sel.value === 'مخصص');
+  };
+
+  window.openReport = function() {
+    window.open('report.html', '_blank', 'width=820,height=620');
+  };
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent  = msg;
+    t.className    = `toast show ${type}`;
+    setTimeout(() => t.className = 'toast', 2400);
   }
 
-  function sendEntry() {
+  // ─── Save to Firestore + copy ─────────────────────────────────
+  window.sendEntry = async function() {
     const order  = document.getElementById('order-num').value.trim();
     const phone  = document.getElementById('phone-num').value.trim();
     const branch = document.getElementById('branch').value;
-    const sel    = document.getElementById('reason');
-    const reason = sel.value === 'مخصص'
+    const selEl  = document.getElementById('reason');
+    const reason = selEl.value === 'مخصص'
       ? document.getElementById('custom-reason-txt').value.trim()
-      : sel.value;
+      : selEl.value;
 
     if (!order || !branch || !reason) {
-      alert('⚠️ رقم الأوردر والفرع والسبب مطلوبة');
+      showToast('⚠️ رقم الأوردر والفرع والسبب مطلوبة', 'fail');
       return;
     }
 
-    // Save entry
-    const entries = load();
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('ar-IQ', {hour:'2-digit', minute:'2-digit'});
-    const entry = {
-      id: Date.now(),
-      order,
-      phone,
-      branch,
-      reason,
-      time: timeStr
-    };
-    entries.push(entry);
-    save(entries);
+    btnSend.disabled = true;
+    btnSend.textContent = '⏳ جاري الحفظ...';
 
-    // Build WhatsApp message
-    const msg =
-      `🚫 إلغاء أوردر\n` +
-      `📦 رقم الأوردر: ${order}\n` +
-      (phone ? `📞 رقم الزبون: ${phone}\n` : '') +
-      `🏪 الفرع: ${branch}\n` +
-      `❌ السبب: ${reason}\n` +
-      `⏰ الوقت: ${timeStr}`;
+    try {
+      await addDoc(col, {
+        order,
+        phone:     phone || null,
+        branch,
+        reason,
+        createdAt: serverTimestamp()
+      });
 
-    // Copy to clipboard
-    const copy = (text) => {
-      if (navigator.clipboard) {
-        return navigator.clipboard.writeText(text);
+      // Build WhatsApp message
+      const now     = new Date();
+      const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+      const msg =
+        `🚫 إلغاء أوردر\n` +
+        `📦 رقم الأوردر: ${order}\n` +
+        (phone ? `📞 رقم الزبون: ${phone}\n` : '') +
+        `🏪 الفرع: ${branch}\n` +
+        `❌ السبب: ${reason}\n` +
+        `⏰ الوقت: ${timeStr}`;
+
+      try {
+        await navigator.clipboard.writeText(msg);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = msg;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
       }
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      return Promise.resolve();
-    };
 
-    copy(msg).then(() => {
-      showToast();
-      updateCounter();
-      // Reset fields
+      showToast('✅ تم الحفظ والنسخ!', 'success');
+
+      // Reset
       document.getElementById('order-num').value = '';
-      document.getElementById('phone-num').value = '';
-      document.getElementById('branch').value = '';
-      document.getElementById('reason').value = '';
+      document.getElementById('phone-num').value  = '';
+      document.getElementById('branch').value      = '';
+      selEl.value = '';
       document.getElementById('custom-reason-txt').value = '';
       document.getElementById('custom-wrap').classList.remove('visible');
       document.getElementById('order-num').focus();
-    }).catch(() => { showToast(); updateCounter(); });
-  }
 
-  function openReport() {
-    window.open('report.html', '_blank', 'width=800,height=600');
-  }
-
-  function showToast() {
-    const t = document.getElementById('toast');
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2200);
-  }
-
-  updateCounter();
+    } catch (err) {
+      showToast('❌ فشل الحفظ — تحقق من الاتصال', 'fail');
+      console.error(err);
+    } finally {
+      btnSend.disabled    = false;
+      btnSend.textContent = '📋 حفظ + نسخ للواتساب';
+    }
+  };
 </script>
 
 </body>
