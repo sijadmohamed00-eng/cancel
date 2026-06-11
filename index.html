@@ -3,205 +3,246 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الإلغاءات - سحابة مشتركة</title>
+<title>تقرير الإلغاءات</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
   body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-    background: #10132a;
+    background: #0a0e1a;
     color: #eee;
-    width: 160px;
-    overflow: hidden;
-    user-select: none;
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   .header {
     background: linear-gradient(135deg, #1B52C4, #0d3a8a);
-    padding: 5px 7px;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .header h1 {
+    font-size: 20px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    cursor: move;
-    border-bottom: 1px solid #4A9EFF33;
+    gap: 8px;
   }
 
-  .header-title { font-size: 10px; font-weight: 700; color: #fff; }
-
-  .body {
-    padding: 6px 6px 5px;
+  .stats {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    gap: 15px;
+    flex-wrap: wrap;
   }
 
-  label {
-    font-size: 9px;
+  .stat-card {
+    background: #10132a;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border-right: 3px solid #4A9EFF;
+  }
+
+  .stat-card span {
     color: #4A9EFF;
-    font-weight: 600;
-    display: block;
-    margin-bottom: 1px;
+    font-size: 12px;
   }
 
-  input[type="text"], select {
-    width: 100%;
+  .stat-card .number {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+  }
+
+  .controls {
+    background: #10132a;
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .controls input, .controls select {
     background: #0a1228;
     border: 1px solid #1B52C444;
-    border-radius: 4px;
+    border-radius: 6px;
     color: #fff;
-    font-size: 10.5px;
-    padding: 4px 5px;
-    outline: none;
+    padding: 8px 12px;
+    font-size: 13px;
     font-family: inherit;
-    direction: rtl;
-    transition: border-color 0.2s;
   }
 
-  input[type="text"]:focus, select:focus { border-color: #4A9EFF; }
-
-  select option { background: #0a1228; }
-
-  .custom-reason { display: none; margin-top: 3px; }
-  .custom-reason.visible { display: block; }
-
-  .btn-send {
-    width: 100%;
-    background: linear-gradient(135deg, #1B52C4, #4A9EFF);
+  .controls button {
+    background: #1B52C4;
     color: #fff;
     border: none;
-    border-radius: 5px;
-    padding: 6px;
-    font-size: 10.5px;
-    font-weight: 700;
+    border-radius: 6px;
+    padding: 8px 16px;
     cursor: pointer;
-    margin-top: 2px;
     font-family: inherit;
-    transition: opacity 0.15s;
+    transition: opacity 0.2s;
   }
 
-  .btn-send:active { opacity: 0.8; }
-  .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+  .controls button:hover {
+    opacity: 0.8;
+  }
 
-  .btn-report {
+  .btn-refresh {
+    background: #16a34a !important;
+  }
+
+  .btn-export {
+    background: #dc2626 !important;
+  }
+
+  table {
     width: 100%;
-    background: transparent;
-    color: #4A9EFF;
-    border: 1px solid #4A9EFF55;
-    border-radius: 5px;
-    padding: 4px;
-    font-size: 9.5px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
+    border-collapse: collapse;
+    background: #10132a;
+    border-radius: 12px;
+    overflow: hidden;
   }
 
-  .btn-report:hover { background: #4A9EFF11; }
-
-  .counter {
+  th, td {
+    padding: 12px 10px;
     text-align: center;
-    font-size: 9px;
-    color: #4A9EFF99;
-    padding: 1px 0;
+    border-bottom: 1px solid #1B52C444;
   }
 
-  .sync-status {
-    text-align: center;
-    font-size: 8px;
-    color: #4A9EFF66;
-    padding: 1px 0;
-    cursor: pointer;
-  }
-  .sync-status.synced { color: #16a34a; }
-  .sync-status.error { color: #ef4444; }
-  .sync-status.syncing { color: #f59e0b; }
-
-  .toast {
-    position: fixed;
-    bottom: 5px;
-    left: 4px;
-    right: 4px;
-    background: #16a34a;
+  th {
+    background: #1B52C4;
     color: #fff;
-    font-size: 10px;
-    text-align: center;
-    padding: 5px 4px;
-    border-radius: 5px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    z-index: 99;
+    font-size: 13px;
+    font-weight: 600;
   }
 
-  .toast.show { opacity: 1; }
-  .toast.error { background: #dc2626; }
+  td {
+    font-size: 13px;
+  }
 
-  hr { border: none; border-top: 1px solid #1B52C422; margin: 2px 0; }
+  tr:hover {
+    background: #1a1f3a;
+  }
+
+  .empty-row td {
+    text-align: center;
+    padding: 40px;
+    color: #4A9EFF99;
+  }
+
+  .branch-badge {
+    background: #4A9EFF22;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  .reason-badge {
+    background: #f59e0b22;
+    color: #f59e0b;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #4A9EFF;
+  }
+
+  .footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 11px;
+    color: #4A9EFF99;
+  }
+
+  @media (max-width: 768px) {
+    th, td {
+      padding: 8px 5px;
+      font-size: 11px;
+    }
+    .stat-card .number {
+      font-size: 18px;
+    }
+  }
 </style>
 </head>
 <body>
 
-<div class="header" id="drag-handle">
-  <span class="header-title">🚫 تسجيل إلغاء</span>
-  <span style="font-size:10px">☁️</span>
-</div>
-
-<div class="body">
-
-  <div>
-    <label>رقم الأوردر *</label>
-    <input type="text" id="order-num" placeholder="مثال: 284" inputmode="numeric">
-  </div>
-
-  <div>
-    <label>رقم الزبون</label>
-    <input type="text" id="phone-num" placeholder="07xxxxxxxxx" inputmode="tel">
-  </div>
-
-  <div>
-    <label>الفرع *</label>
-    <select id="branch">
-      <option value="">— اختر الفرع —</option>
-      <option>فرع الشعب</option>
-      <option>فرع البنوك</option>
-      <option>فرع الغدير</option>
-      <option>فرع الحرية</option>
-      <option>فرع الدورة</option>
-      <option>فرع بسماية</option>
-      <option>فرع الغزالية</option>
-      <option>فرع الأعظمية</option>
-      <option>فرع حي العامل</option>
-      <option>فرع البوعيثة</option>
-      <option>فرع حي الجهاد</option>
-      <option>فرع شهداء البياع</option>
-    </select>
-  </div>
-
-  <div>
-    <label>سبب الإلغاء *</label>
-    <select id="reason" onchange="toggleCustom()">
-      <option value="">— اختر السبب —</option>
-      <option>زبون</option>
-      <option>تكرار</option>
-      <option>تحويل</option>
-      <option>عدم رد</option>
-      <option>خارج الزون</option>
-      <option value="مخصص">مخصص ✏️</option>
-    </select>
-    <div class="custom-reason" id="custom-wrap">
-      <input type="text" id="custom-reason-txt" placeholder="اكتب السبب...">
+<div class="container">
+  <div class="header">
+    <h1>📊 تقرير الإلغاءات</h1>
+    <div class="stats" id="stats">
+      <div class="stat-card">
+        <span>📦 إجمالي الإلغاءات</span>
+        <div class="number" id="total-count">0</div>
+      </div>
+      <div class="stat-card">
+        <span>🏪 الفروع</span>
+        <div class="number" id="branch-count">0</div>
+      </div>
+      <div class="stat-card">
+        <span>❌ أسباب</span>
+        <div class="number" id="reason-count">0</div>
+      </div>
     </div>
   </div>
 
-  <hr>
+  <div class="controls">
+    <input type="text" id="search-input" placeholder="🔍 بحث برقم الأوردر أو الزبون..." style="flex: 1; min-width: 150px;">
+    <select id="branch-filter">
+      <option value="">كل الفروع</option>
+    </select>
+    <select id="reason-filter">
+      <option value="">كل الأسباب</option>
+    </select>
+    <button onclick="loadData()" class="btn-refresh">🔄 تحديث</button>
+    <button onclick="exportToExcel()" class="btn-export">📎 تصدير Excel</button>
+    <button onclick="window.print()">🖨️ طباعة</button>
+  </div>
 
-  <button class="btn-send" id="send-btn" onclick="sendEntry()">📋 حفظ + نسخ للواتساب</button>
-  <div class="counter" id="counter">الإلغاءات اليوم: 0</div>
-  <div class="sync-status" id="sync-status" onclick="syncFromCloud()">☁️ متزامن</div>
-  <button class="btn-report" onclick="openReport()">📊 فتح التقرير</button>
-
+  <div style="overflow-x: auto;">
+    <table id="report-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>رقم الأوردر</th>
+          <th>رقم الزبون</th>
+          <th>الفرع</th>
+          <th>سبب الإلغاء</th>
+          <th>الوقت</th>
+          <th>التاريخ</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr class="empty-row">
+          <td colspan="7">⏳ جاري تحميل البيانات...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="footer">
+    🔄 البيانات محدثة تلقائياً | آخر تحديث: <span id="last-update">-</span>
+  </div>
 </div>
-
-<div class="toast" id="toast">✅ تم الحفظ والنسخ!</div>
 
 <script type="importmap">
   {
@@ -214,21 +255,8 @@
 
 <script type="module">
   import { initializeApp } from "firebase/app";
-  import { 
-    getDatabase, 
-    ref, 
-    set, 
-    get, 
-    push,
-    onValue,
-    off,
-    query,
-    orderByChild,
-    limitToLast,
-    serverTimestamp
-  } from "firebase/database";
+  import { getDatabase, ref, get, onValue } from "firebase/database";
 
-  // Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
     authDomain: "cansel-9df25.firebaseapp.com",
@@ -239,359 +267,211 @@
     databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"
   };
 
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
-  
-  const STORAGE_KEY = 'cancel_entries_rtdb_v1';
-  let currentEntries = [];
-  let databaseListener = null;
-  
-  // Helper functions
+
+  let allEntries = [];
+  let branchesSet = new Set();
+  let reasonsSet = new Set();
+
   function getTodayKey() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
-  
-  function getTodayPath() {
-    return `cancellations/${getTodayKey()}`;
-  }
-  
-  function loadLocal() {
+
+  async function loadData() {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">⏳ جاري التحميل من السحابة...</td></tr>';
+    
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) {
-        const parsed = JSON.parse(data);
-        return parsed[getTodayKey()] || [];
+      // Try to load from Firebase first
+      const todayKey = getTodayKey();
+      const cancellationsRef = ref(database, `cancellations/${todayKey}`);
+      const snapshot = await get(cancellationsRef);
+      
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        allEntries = Object.entries(data).map(([id, entry]) => ({
+          id: parseInt(id) || id,
+          order: entry.order || '-',
+          phone: entry.phone || '-',
+          branch: entry.branch || '-',
+          reason: entry.reason || '-',
+          time: entry.time || '-',
+          date: todayKey
+        }));
+      } else {
+        // Try to load from sessionStorage as fallback
+        const saved = sessionStorage.getItem('current_cancel_entries');
+        if (saved) {
+          allEntries = JSON.parse(saved);
+        } else {
+          allEntries = [];
+        }
       }
-      return [];
-    } catch { return []; }
-  }
-  
-  function saveLocal(entries) {
-    try {
-      const all = {};
-      all[getTodayKey()] = entries;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-      currentEntries = entries;
-    } catch {}
-  }
-  
-  function updateCounter() {
-    document.getElementById('counter').textContent = `الإلغاءات اليوم: ${currentEntries.length}`;
-  }
-  
-  function showToast(msg, isError = false) {
-    const t = document.getElementById('toast');
-    t.textContent = msg || (isError ? '❌ حدث خطأ' : '✅ تم الحفظ والنسخ!');
-    if (isError) t.classList.add('error');
-    else t.classList.remove('error');
-    t.classList.add('show');
-    setTimeout(() => {
-      t.classList.remove('show');
-      if (!isError) t.textContent = '✅ تم الحفظ والنسخ!';
-    }, 2200);
-  }
-  
-  function updateSyncStatus(status, isError = false) {
-    const statusEl = document.getElementById('sync-status');
-    if (status === 'synced') {
-      statusEl.textContent = '☁️ متزامن ✓';
-      statusEl.classList.add('synced');
-      statusEl.classList.remove('error', 'syncing');
-    } else if (status === 'syncing') {
-      statusEl.textContent = '☁️ جاري...';
-      statusEl.classList.add('syncing');
-      statusEl.classList.remove('synced', 'error');
-    } else if (status === 'error') {
-      statusEl.textContent = '☁️ غير متزامن';
-      statusEl.classList.add('error');
-      statusEl.classList.remove('synced', 'syncing');
-    } else {
-      statusEl.textContent = '☁️ متصل';
-      statusEl.classList.remove('synced', 'error', 'syncing');
+      
+      // Update filters
+      updateFilters();
+      renderTable();
+      updateStats();
+      
+      document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ');
+      
+    } catch (err) {
+      console.error('Error loading data:', err);
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">❌ خطأ في تحميل البيانات من السحابة</td></tr>';
+      
+      // Fallback to sessionStorage
+      const saved = sessionStorage.getItem('current_cancel_entries');
+      if (saved) {
+        allEntries = JSON.parse(saved);
+        renderTable();
+        updateStats();
+      }
     }
   }
-  
-  // Listen to realtime updates from Firebase
-  function listenToRealtimeUpdates() {
-    if (databaseListener) {
-      off(databaseListener);
-    }
+
+  function updateFilters() {
+    branchesSet.clear();
+    reasonsSet.clear();
     
-    const todayPath = getTodayPath();
-    const entriesRef = ref(database, todayPath);
+    allEntries.forEach(entry => {
+      if (entry.branch) branchesSet.add(entry.branch);
+      if (entry.reason) reasonsSet.add(entry.reason);
+    });
     
-    databaseListener = onValue(entriesRef, (snapshot) => {
-      const cloudData = snapshot.val();
-      let cloudEntries = [];
-      
-      if (cloudData) {
-        // Convert object to array
-        cloudEntries = Object.entries(cloudData).map(([id, entry]) => ({
-          ...entry,
-          id: parseInt(id) || entry.id
-        })).sort((a, b) => (a.timestamp || a.id) - (b.timestamp || b.id));
-      }
-      
-      const localEntries = loadLocal();
-      
-      // Merge: cloud takes precedence
-      const mergedMap = new Map();
-      cloudEntries.forEach(entry => mergedMap.set(entry.id, entry));
-      localEntries.forEach(entry => {
-        if (!mergedMap.has(entry.id)) mergedMap.set(entry.id, entry);
-      });
-      
-      const mergedEntries = Array.from(mergedMap.values()).sort((a,b) => a.id - b.id);
-      
-      // Only update if changed
-      if (JSON.stringify(mergedEntries) !== JSON.stringify(currentEntries)) {
-        saveLocal(mergedEntries);
-        currentEntries = mergedEntries;
-        updateCounter();
-        updateSyncStatus('synced');
-      }
-    }, (error) => {
-      console.error('Realtime listener error:', error);
-      updateSyncStatus('error', true);
+    const branchFilter = document.getElementById('branch-filter');
+    branchFilter.innerHTML = '<option value="">كل الفروع</option>';
+    Array.from(branchesSet).sort().forEach(branch => {
+      branchFilter.innerHTML += `<option value="${branch}">${branch}</option>`;
+    });
+    
+    const reasonFilter = document.getElementById('reason-filter');
+    reasonFilter.innerHTML = '<option value="">كل الأسباب</option>';
+    Array.from(reasonsSet).sort().forEach(reason => {
+      reasonFilter.innerHTML += `<option value="${reason}">${reason}</option>`;
     });
   }
-  
-  // Sync from cloud manually
-  window.syncFromCloud = async function() {
-    updateSyncStatus('syncing');
+
+  function renderTable() {
+    const searchText = document.getElementById('search-input').value.toLowerCase();
+    const branchFilter = document.getElementById('branch-filter').value;
+    const reasonFilter = document.getElementById('reason-filter').value;
     
-    try {
-      const todayPath = getTodayPath();
-      const entriesRef = ref(database, todayPath);
-      const snapshot = await get(entriesRef);
-      
-      let cloudEntries = [];
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        cloudEntries = Object.entries(data).map(([id, entry]) => ({
-          ...entry,
-          id: parseInt(id) || entry.id
-        })).sort((a, b) => a.id - b.id);
-      }
-      
-      const localEntries = loadLocal();
-      const mergedMap = new Map();
-      
-      cloudEntries.forEach(entry => mergedMap.set(entry.id, entry));
-      localEntries.forEach(entry => {
-        if (!mergedMap.has(entry.id)) mergedMap.set(entry.id, entry);
-      });
-      
-      const mergedEntries = Array.from(mergedMap.values()).sort((a,b) => a.id - b.id);
-      saveLocal(mergedEntries);
-      currentEntries = mergedEntries;
-      updateCounter();
-      updateSyncStatus('synced');
-      showToast('✅ تمت المزامنة مع السحابة', false);
-    } catch (err) {
-      console.error('Sync error:', err);
-      updateSyncStatus('error', true);
-      showToast('⚠️ فشل الاتصال بالسحابة', true);
-    }
-  };
-  
-  // Upload single entry to Firebase
-  async function uploadEntryToFirebase(entry) {
-    try {
-      const todayPath = getTodayPath();
-      // Use entry ID as the key for easy updates
-      const entryRef = ref(database, `${todayPath}/${entry.id}`);
-      await set(entryRef, {
-        ...entry,
-        syncedAt: serverTimestamp()
-      });
-      return true;
-    } catch (err) {
-      console.error('Upload error:', err);
-      return false;
-    }
-  }
-  
-  // Upload all entries to Firebase (batch sync)
-  async function uploadAllToFirebase(entries) {
-    try {
-      const todayPath = getTodayPath();
-      const updates = {};
-      entries.forEach(entry => {
-        updates[`${todayPath}/${entry.id}`] = {
-          ...entry,
-          syncedAt: serverTimestamp()
-        };
-      });
-      
-      // Use ref and set for each or batch write
-      for (const entry of entries) {
-        const entryRef = ref(database, `${todayPath}/${entry.id}`);
-        await set(entryRef, {
-          ...entry,
-          syncedAt: serverTimestamp()
-        });
+    let filtered = allEntries.filter(entry => {
+      if (branchFilter && entry.branch !== branchFilter) return false;
+      if (reasonFilter && entry.reason !== reasonFilter) return false;
+      if (searchText) {
+        return entry.order.toLowerCase().includes(searchText) ||
+               entry.phone.toLowerCase().includes(searchText);
       }
       return true;
-    } catch (err) {
-      console.error('Batch upload error:', err);
-      return false;
-    }
-  }
-  
-  window.toggleCustom = function() {
-    const sel = document.getElementById('reason');
-    document.getElementById('custom-wrap').classList.toggle('visible', sel.value === 'مخصص');
-  };
-  
-  window.sendEntry = async function() {
-    const order  = document.getElementById('order-num').value.trim();
-    const phone  = document.getElementById('phone-num').value.trim();
-    const branch = document.getElementById('branch').value;
-    const sel    = document.getElementById('reason');
-    const reason = sel.value === 'مخصص'
-      ? document.getElementById('custom-reason-txt').value.trim()
-      : sel.value;
-  
-    if (!order || !branch || !reason) {
-      showToast('⚠️ رقم الأوردر والفرع والسبب مطلوبة', true);
+    });
+    
+    filtered.sort((a, b) => b.id - a.id);
+    
+    const tbody = document.getElementById('table-body');
+    
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">📭 لا توجد إلغاءات مسجلة اليوم</td></tr>';
       return;
     }
-  
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('ar-IQ', {hour:'2-digit', minute:'2-digit'});
-    const entry = {
-      id: Date.now(),
-      order: order,
-      phone: phone || '',
-      branch: branch,
-      reason: reason,
-      time: timeStr,
-      timestamp: now.toISOString(),
-      createdAt: now.getTime()
-    };
-  
-    const btn = document.getElementById('send-btn');
-    const originalText = btn.textContent;
-    btn.textContent = '⏳ جاري الحفظ...';
-    btn.disabled = true;
-  
-    try {
-      // Save to local first (optimistic)
-      const newEntries = [...currentEntries, entry];
-      saveLocal(newEntries);
-      currentEntries = newEntries;
-      updateCounter();
-      
-      // Try to upload to Firebase
-      const uploaded = await uploadEntryToFirebase(entry);
-      
-      if (!uploaded) {
-        updateSyncStatus('error', true);
-        showToast('⚠️ تم الحفظ محلياً (لا يوجد اتصال)', true);
-      } else {
-        updateSyncStatus('synced');
-      }
-      
-      // Build WhatsApp message
-      const msg = `🚫 إلغاء أوردر\n📦 رقم الأوردر: ${order}\n${phone ? `📞 رقم الزبون: ${phone}\n` : ''}🏪 الفرع: ${branch}\n❌ السبب: ${reason}\n⏰ الوقت: ${timeStr}`;
-      
-      // Copy to clipboard
-      await navigator.clipboard.writeText(msg);
-      
-      const syncMsg = uploaded ? '' : ' (حفظ محلي فقط)';
-      showToast(`✅ تم الحفظ والنسخ${syncMsg}`, !uploaded);
-      
-      // Reset fields
-      document.getElementById('order-num').value = '';
-      document.getElementById('phone-num').value = '';
-      document.getElementById('branch').value = '';
-      document.getElementById('reason').value = '';
-      document.getElementById('custom-reason-txt').value = '';
-      document.getElementById('custom-wrap').classList.remove('visible');
-      document.getElementById('order-num').focus();
-      
-    } catch (err) {
-      console.error('Send error:', err);
-      showToast('❌ فشل الحفظ', true);
-    } finally {
-      btn.textContent = originalText;
-      btn.disabled = false;
+    
+    tbody.innerHTML = filtered.map((entry, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><strong>${entry.order}</strong></td>
+        <td dir="ltr" style="text-align: center;">${entry.phone !== '-' ? entry.phone : '—'}</td>
+        <td><span class="branch-badge">${entry.branch}</span></td>
+        <td><span class="reason-badge">${entry.reason}</span></td>
+        <td>${entry.time}</td>
+        <td>${entry.date || getTodayKey()}</td>
+      </tr>
+    `).join('');
+  }
+
+  function updateStats() {
+    document.getElementById('total-count').textContent = allEntries.length;
+    document.getElementById('branch-count').textContent = branchesSet.size;
+    document.getElementById('reason-count').textContent = reasonsSet.size;
+  }
+
+  window.loadData = loadData;
+
+  window.exportToExcel = function() {
+    const filtered = getFilteredData();
+    if (filtered.length === 0) {
+      alert('لا توجد بيانات للتصدير');
+      return;
     }
-  };
-  
-  window.openReport = function() {
-    // Store current entries for report
-    localStorage.setItem('report_data_rtdb', JSON.stringify(currentEntries));
-    window.open('report.html', '_blank', 'width=800,height=600');
-  };
-  
-  // Sync local unsynced entries on reconnect
-  async function syncPendingEntries() {
-    if (!navigator.onLine) return;
     
-    const localEntries = loadLocal();
-    if (localEntries.length === 0) return;
+    let csv = "الرقم,رقم الأوردر,رقم الزبون,الفرع,سبب الإلغاء,الوقت,التاريخ\n";
+    filtered.forEach((entry, idx) => {
+      csv += `${idx + 1},${entry.order},${entry.phone},${entry.branch},${entry.reason},${entry.time},${entry.date || getTodayKey()}\n`;
+    });
     
-    updateSyncStatus('syncing');
-    try {
-      const todayPath = getTodayPath();
-      const snapshot = await get(ref(database, todayPath));
-      
-      const existingIds = new Set();
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute("download", `تقرير_الالغاءات_${getTodayKey()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  function getFilteredData() {
+    const searchText = document.getElementById('search-input').value.toLowerCase();
+    const branchFilter = document.getElementById('branch-filter').value;
+    const reasonFilter = document.getElementById('reason-filter').value;
+    
+    return allEntries.filter(entry => {
+      if (branchFilter && entry.branch !== branchFilter) return false;
+      if (reasonFilter && entry.reason !== reasonFilter) return false;
+      if (searchText) {
+        return entry.order.toLowerCase().includes(searchText) ||
+               entry.phone.toLowerCase().includes(searchText);
+      }
+      return true;
+    }).sort((a, b) => b.id - a.id);
+  }
+
+  // Listen for realtime updates
+  function listenToRealtime() {
+    const todayKey = getTodayKey();
+    const cancellationsRef = ref(database, `cancellations/${todayKey}`);
+    
+    onValue(cancellationsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        Object.keys(data).forEach(key => existingIds.add(parseInt(key)));
+        allEntries = Object.entries(data).map(([id, entry]) => ({
+          id: parseInt(id) || id,
+          order: entry.order || '-',
+          phone: entry.phone || '-',
+          branch: entry.branch || '-',
+          reason: entry.reason || '-',
+          time: entry.time || '-',
+          date: todayKey
+        }));
+        updateFilters();
+        renderTable();
+        updateStats();
+        document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ') + ' (تلقائي)';
       }
-      
-      // Upload only entries that don't exist in cloud
-      const missingEntries = localEntries.filter(entry => !existingIds.has(entry.id));
-      
-      if (missingEntries.length > 0) {
-        await uploadAllToFirebase(missingEntries);
-        updateSyncStatus('synced');
-        showToast(`✅ تمت مزامنة ${missingEntries.length} إلغاءات`, false);
-      } else {
-        updateSyncStatus('synced');
-      }
-    } catch (err) {
-      console.error('Sync pending error:', err);
-      updateSyncStatus('error', true);
-    }
+    }, (error) => {
+      console.error('Realtime error:', error);
+    });
   }
-  
-  // Initialize
-  function init() {
-    currentEntries = loadLocal();
-    updateCounter();
-    listenToRealtimeUpdates();
-    
-    // Sync pending on load
-    setTimeout(() => syncPendingEntries(), 1000);
-  }
-  
-  // Network listeners
-  window.addEventListener('online', () => {
-    showToast('🌐 تم الاتصال بالإنترنت، جاري المزامنة', false);
-    syncPendingEntries();
-  });
-  
-  window.addEventListener('offline', () => {
-    updateSyncStatus('error', true);
-    showToast('⚠️ لا يوجد اتصال بالإنترنت - سيتم الحفظ محلياً', true);
-  });
+
+  // Add event listeners
+  document.getElementById('search-input').addEventListener('input', renderTable);
+  document.getElementById('branch-filter').addEventListener('change', renderTable);
+  document.getElementById('reason-filter').addEventListener('change', renderTable);
   
   // Start
-  init();
-  
-  // Auto sync every 60 seconds
-  setInterval(() => {
-    if (navigator.onLine) {
-      syncPendingEntries();
-    }
-  }, 60000);
+  listenToRealtime();
+  loadData();
 </script>
 
 </body>
