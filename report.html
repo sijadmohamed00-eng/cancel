@@ -5,12 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تقرير الإلغاءات</title>
 <style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background: #0a0e1a;
@@ -18,12 +13,7 @@
     padding: 20px;
     min-height: 100vh;
   }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
+  .container { max-width: 1200px; margin: 0 auto; }
   .header {
     background: linear-gradient(135deg, #1B52C4, #0d3a8a);
     padding: 15px 20px;
@@ -35,38 +25,16 @@
     flex-wrap: wrap;
     gap: 10px;
   }
-
-  .header h1 {
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .stats {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-  }
-
+  .header h1 { font-size: 20px; }
+  .stats { display: flex; gap: 15px; flex-wrap: wrap; }
   .stat-card {
     background: #10132a;
     padding: 8px 16px;
     border-radius: 8px;
     border-right: 3px solid #4A9EFF;
   }
-
-  .stat-card span {
-    color: #4A9EFF;
-    font-size: 12px;
-  }
-
-  .stat-card .number {
-    font-size: 22px;
-    font-weight: bold;
-    color: #fff;
-  }
-
+  .stat-card span { color: #4A9EFF; font-size: 12px; }
+  .stat-card .number { font-size: 22px; font-weight: bold; color: #fff; }
   .controls {
     background: #10132a;
     padding: 12px 15px;
@@ -77,17 +45,13 @@
     flex-wrap: wrap;
     align-items: center;
   }
-
   .controls input, .controls select {
     background: #0a1228;
     border: 1px solid #1B52C444;
     border-radius: 6px;
     color: #fff;
     padding: 8px 12px;
-    font-size: 13px;
-    font-family: inherit;
   }
-
   .controls button {
     background: #1B52C4;
     color: #fff;
@@ -95,22 +59,9 @@
     border-radius: 6px;
     padding: 8px 16px;
     cursor: pointer;
-    font-family: inherit;
-    transition: opacity 0.2s;
   }
-
-  .controls button:hover {
-    opacity: 0.8;
-  }
-
-  .btn-refresh {
-    background: #16a34a !important;
-  }
-
-  .btn-export {
-    background: #dc2626 !important;
-  }
-
+  .btn-refresh { background: #16a34a !important; }
+  .btn-export { background: #dc2626 !important; }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -118,145 +69,49 @@
     border-radius: 12px;
     overflow: hidden;
   }
-
   th, td {
     padding: 12px 10px;
     text-align: center;
     border-bottom: 1px solid #1B52C444;
   }
-
-  th {
-    background: #1B52C4;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  td {
-    font-size: 13px;
-  }
-
-  tr:hover {
-    background: #1a1f3a;
-  }
-
-  .empty-row td {
-    text-align: center;
-    padding: 40px;
-    color: #4A9EFF99;
-  }
-
-  .branch-badge {
-    background: #4A9EFF22;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-  }
-
-  .reason-badge {
-    background: #f59e0b22;
-    color: #f59e0b;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-  }
-
-  .loading {
-    text-align: center;
-    padding: 40px;
-    color: #4A9EFF;
-  }
-
-  .footer {
-    margin-top: 20px;
-    text-align: center;
-    font-size: 11px;
-    color: #4A9EFF99;
-  }
-
-  @media (max-width: 768px) {
-    th, td {
-      padding: 8px 5px;
-      font-size: 11px;
-    }
-    .stat-card .number {
-      font-size: 18px;
-    }
-  }
+  th { background: #1B52C4; }
+  tr:hover { background: #1a1f3a; }
+  .empty-row td { text-align: center; padding: 40px; color: #4A9EFF99; }
+  .branch-badge { background: #4A9EFF22; padding: 4px 8px; border-radius: 6px; }
+  .reason-badge { background: #f59e0b22; color: #f59e0b; padding: 4px 8px; border-radius: 6px; }
+  .footer { margin-top: 20px; text-align: center; font-size: 11px; color: #4A9EFF99; }
 </style>
 </head>
 <body>
-
 <div class="container">
   <div class="header">
     <h1>📊 تقرير الإلغاءات</h1>
-    <div class="stats" id="stats">
-      <div class="stat-card">
-        <span>📦 إجمالي الإلغاءات</span>
-        <div class="number" id="total-count">0</div>
-      </div>
-      <div class="stat-card">
-        <span>🏪 الفروع</span>
-        <div class="number" id="branch-count">0</div>
-      </div>
-      <div class="stat-card">
-        <span>❌ أسباب</span>
-        <div class="number" id="reason-count">0</div>
-      </div>
+    <div class="stats">
+      <div class="stat-card"><span>📦 إجمالي الإلغاءات</span><div class="number" id="total-count">0</div></div>
+      <div class="stat-card"><span>🏪 الفروع</span><div class="number" id="branch-count">0</div></div>
+      <div class="stat-card"><span>❌ أسباب</span><div class="number" id="reason-count">0</div></div>
     </div>
   </div>
-
   <div class="controls">
-    <input type="text" id="search-input" placeholder="🔍 بحث برقم الأوردر أو الزبون..." style="flex: 1; min-width: 150px;">
-    <select id="branch-filter">
-      <option value="">كل الفروع</option>
-    </select>
-    <select id="reason-filter">
-      <option value="">كل الأسباب</option>
-    </select>
+    <input type="text" id="search-input" placeholder="🔍 بحث..." style="flex:1; min-width:150px;">
+    <select id="branch-filter"><option value="">كل الفروع</option></select>
+    <select id="reason-filter"><option value="">كل الأسباب</option></select>
     <button onclick="loadData()" class="btn-refresh">🔄 تحديث</button>
     <button onclick="exportToExcel()" class="btn-export">📎 تصدير Excel</button>
     <button onclick="window.print()">🖨️ طباعة</button>
   </div>
-
-  <div style="overflow-x: auto;">
+  <div style="overflow-x:auto;">
     <table id="report-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>رقم الأوردر</th>
-          <th>رقم الزبون</th>
-          <th>الفرع</th>
-          <th>سبب الإلغاء</th>
-          <th>الوقت</th>
-          <th>التاريخ</th>
-        </tr>
-      </thead>
-      <tbody id="table-body">
-        <tr class="empty-row">
-          <td colspan="7">⏳ جاري تحميل البيانات...</td>
-        </tr>
-      </tbody>
+      <thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>الفرع</th><th>سبب الإلغاء</th><th>الوقت</th><th>التاريخ</th></tr></thead>
+      <tbody id="table-body"><tr class="empty-row"><td colspan="7">⏳ جاري التحميل...</td></tr></tbody>
     </table>
   </div>
-  <div class="footer">
-    🔄 البيانات محدثة تلقائياً | آخر تحديث: <span id="last-update">-</span>
-  </div>
+  <div class="footer">🔄 البيانات محدثة تلقائياً | آخر تحديث: <span id="last-update">-</span></div>
 </div>
 
-<script type="importmap">
-  {
-    "imports": {
-      "firebase/app": "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js",
-      "firebase/database": "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js"
-    }
-  }
-</script>
-
-<script type="module">
-  import { initializeApp } from "firebase/app";
-  import { getDatabase, ref, get, onValue } from "firebase/database";
-
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js"></script>
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
     authDomain: "cansel-9df25.firebaseapp.com",
@@ -267,212 +122,102 @@
     databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const database = getDatabase(app);
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
 
   let allEntries = [];
-  let branchesSet = new Set();
-  let reasonsSet = new Set();
 
   function getTodayKey() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  async function loadData() {
-    const tbody = document.getElementById('table-body');
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">⏳ جاري التحميل من السحابة...</td></tr>';
-    
-    try {
-      // Try to load from Firebase first
-      const todayKey = getTodayKey();
-      const cancellationsRef = ref(database, `cancellations/${todayKey}`);
-      const snapshot = await get(cancellationsRef);
-      
+  function loadData() {
+    database.ref(`cancellations/${getTodayKey()}`).once('value').then((snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
         allEntries = Object.entries(data).map(([id, entry]) => ({
-          id: parseInt(id) || id,
-          order: entry.order || '-',
-          phone: entry.phone || '-',
-          branch: entry.branch || '-',
-          reason: entry.reason || '-',
-          time: entry.time || '-',
-          date: todayKey
+          id: parseInt(id), order: entry.order, phone: entry.phone || '-',
+          branch: entry.branch, reason: entry.reason, time: entry.time, date: getTodayKey()
         }));
       } else {
-        // Try to load from sessionStorage as fallback
         const saved = sessionStorage.getItem('current_cancel_entries');
-        if (saved) {
-          allEntries = JSON.parse(saved);
-        } else {
-          allEntries = [];
-        }
+        allEntries = saved ? JSON.parse(saved) : [];
       }
-      
-      // Update filters
-      updateFilters();
       renderTable();
       updateStats();
-      
       document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ');
-      
-    } catch (err) {
-      console.error('Error loading data:', err);
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">❌ خطأ في تحميل البيانات من السحابة</td></tr>';
-      
-      // Fallback to sessionStorage
-      const saved = sessionStorage.getItem('current_cancel_entries');
-      if (saved) {
-        allEntries = JSON.parse(saved);
-        renderTable();
-        updateStats();
-      }
-    }
-  }
-
-  function updateFilters() {
-    branchesSet.clear();
-    reasonsSet.clear();
-    
-    allEntries.forEach(entry => {
-      if (entry.branch) branchesSet.add(entry.branch);
-      if (entry.reason) reasonsSet.add(entry.reason);
-    });
-    
-    const branchFilter = document.getElementById('branch-filter');
-    branchFilter.innerHTML = '<option value="">كل الفروع</option>';
-    Array.from(branchesSet).sort().forEach(branch => {
-      branchFilter.innerHTML += `<option value="${branch}">${branch}</option>`;
-    });
-    
-    const reasonFilter = document.getElementById('reason-filter');
-    reasonFilter.innerHTML = '<option value="">كل الأسباب</option>';
-    Array.from(reasonsSet).sort().forEach(reason => {
-      reasonFilter.innerHTML += `<option value="${reason}">${reason}</option>`;
     });
   }
 
   function renderTable() {
-    const searchText = document.getElementById('search-input').value.toLowerCase();
+    const search = document.getElementById('search-input').value.toLowerCase();
     const branchFilter = document.getElementById('branch-filter').value;
     const reasonFilter = document.getElementById('reason-filter').value;
     
-    let filtered = allEntries.filter(entry => {
-      if (branchFilter && entry.branch !== branchFilter) return false;
-      if (reasonFilter && entry.reason !== reasonFilter) return false;
-      if (searchText) {
-        return entry.order.toLowerCase().includes(searchText) ||
-               entry.phone.toLowerCase().includes(searchText);
-      }
+    let filtered = allEntries.filter(e => {
+      if (branchFilter && e.branch !== branchFilter) return false;
+      if (reasonFilter && e.reason !== reasonFilter) return false;
+      if (search) return e.order.includes(search) || e.phone.includes(search);
       return true;
-    });
-    
-    filtered.sort((a, b) => b.id - a.id);
+    }).sort((a,b) => b.id - a.id);
     
     const tbody = document.getElementById('table-body');
-    
     if (filtered.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">📭 لا توجد إلغاءات مسجلة اليوم</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">📭 لا توجد إلغاءات<td></tr>';
       return;
     }
     
-    tbody.innerHTML = filtered.map((entry, idx) => `
-      <tr>
-        <td>${idx + 1}</td>
-        <td><strong>${entry.order}</strong></td>
-        <td dir="ltr" style="text-align: center;">${entry.phone !== '-' ? entry.phone : '—'}</td>
-        <td><span class="branch-badge">${entry.branch}</span></td>
-        <td><span class="reason-badge">${entry.reason}</span></td>
-        <td>${entry.time}</td>
-        <td>${entry.date || getTodayKey()}</td>
-      </tr>
+    // Update filters dropdowns
+    const branches = [...new Set(allEntries.map(e => e.branch))].sort();
+    const reasons = [...new Set(allEntries.map(e => e.reason))].sort();
+    document.getElementById('branch-filter').innerHTML = '<option value="">كل الفروع</option>' + branches.map(b => `<option value="${b}">${b}</option>`).join('');
+    document.getElementById('reason-filter').innerHTML = '<option value="">كل الأسباب</option>' + reasons.map(r => `<option value="${r}">${r}</option>`).join('');
+    
+    tbody.innerHTML = filtered.map((e, i) => `
+      <tr><td>${i+1}</td><td><strong>${e.order}</strong></td><td dir="ltr">${e.phone}</td>
+      <td><span class="branch-badge">${e.branch}</span></td><td><span class="reason-badge">${e.reason}</span></td>
+      <td>${e.time}</td><td>${e.date}</td></tr>
     `).join('');
   }
 
   function updateStats() {
     document.getElementById('total-count').textContent = allEntries.length;
-    document.getElementById('branch-count').textContent = branchesSet.size;
-    document.getElementById('reason-count').textContent = reasonsSet.size;
+    document.getElementById('branch-count').textContent = [...new Set(allEntries.map(e => e.branch))].length;
+    document.getElementById('reason-count').textContent = [...new Set(allEntries.map(e => e.reason))].length;
   }
 
   window.loadData = loadData;
-
   window.exportToExcel = function() {
-    const filtered = getFilteredData();
-    if (filtered.length === 0) {
-      alert('لا توجد بيانات للتصدير');
-      return;
-    }
-    
+    if (allEntries.length === 0) { alert('لا توجد بيانات'); return; }
     let csv = "الرقم,رقم الأوردر,رقم الزبون,الفرع,سبب الإلغاء,الوقت,التاريخ\n";
-    filtered.forEach((entry, idx) => {
-      csv += `${idx + 1},${entry.order},${entry.phone},${entry.branch},${entry.reason},${entry.time},${entry.date || getTodayKey()}\n`;
-    });
-    
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.setAttribute("download", `تقرير_الالغاءات_${getTodayKey()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    allEntries.forEach((e, i) => csv += `${i+1},${e.order},${e.phone},${e.branch},${e.reason},${e.time},${e.date}\n`);
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv" });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `تقرير_الالغاءات_${getTodayKey()}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   };
 
-  function getFilteredData() {
-    const searchText = document.getElementById('search-input').value.toLowerCase();
-    const branchFilter = document.getElementById('branch-filter').value;
-    const reasonFilter = document.getElementById('reason-filter').value;
-    
-    return allEntries.filter(entry => {
-      if (branchFilter && entry.branch !== branchFilter) return false;
-      if (reasonFilter && entry.reason !== reasonFilter) return false;
-      if (searchText) {
-        return entry.order.toLowerCase().includes(searchText) ||
-               entry.phone.toLowerCase().includes(searchText);
-      }
-      return true;
-    }).sort((a, b) => b.id - a.id);
-  }
+  // Realtime listener
+  database.ref(`cancellations/${getTodayKey()}`).on('value', (snapshot) => {
+    if (snapshot.exists()) {
+      allEntries = Object.entries(snapshot.val()).map(([id, entry]) => ({
+        id: parseInt(id), order: entry.order, phone: entry.phone || '-',
+        branch: entry.branch, reason: entry.reason, time: entry.time, date: getTodayKey()
+      }));
+      renderTable();
+      updateStats();
+      document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ') + ' (تلقائي)';
+    }
+  });
 
-  // Listen for realtime updates
-  function listenToRealtime() {
-    const todayKey = getTodayKey();
-    const cancellationsRef = ref(database, `cancellations/${todayKey}`);
-    
-    onValue(cancellationsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        allEntries = Object.entries(data).map(([id, entry]) => ({
-          id: parseInt(id) || id,
-          order: entry.order || '-',
-          phone: entry.phone || '-',
-          branch: entry.branch || '-',
-          reason: entry.reason || '-',
-          time: entry.time || '-',
-          date: todayKey
-        }));
-        updateFilters();
-        renderTable();
-        updateStats();
-        document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ') + ' (تلقائي)';
-      }
-    }, (error) => {
-      console.error('Realtime error:', error);
-    });
-  }
-
-  // Add event listeners
   document.getElementById('search-input').addEventListener('input', renderTable);
   document.getElementById('branch-filter').addEventListener('change', renderTable);
   document.getElementById('reason-filter').addEventListener('change', renderTable);
   
-  // Start
-  listenToRealtime();
   loadData();
 </script>
-
 </body>
 </html>
