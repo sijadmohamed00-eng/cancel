@@ -6,11 +6,12 @@
 <title>تسجيل الإلغاءات - مزامنة فورية</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
+  html, body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background: #10132a;
     color: #eee;
-    width: 190px;
+    width: 200px;
+    height: auto;
     overflow: hidden;
     user-select: none;
   }
@@ -23,13 +24,20 @@
     cursor: move;
   }
   .header-title { font-size: 10px; font-weight: 700; }
+  .header-btns { display: flex; gap: 4px; align-items: center; }
   .pin-btn {
     background: transparent;
     border: none;
     color: #fff;
     cursor: pointer;
     font-size: 11px;
+    line-height: 1;
+    padding: 1px 3px;
+    border-radius: 3px;
+    transition: background 0.2s;
   }
+  .pin-btn.active { background: #4A9EFF44; }
+  .pin-btn:hover { background: #ffffff22; }
   .body { padding: 6px; display: flex; flex-direction: column; gap: 4px; }
   label { font-size: 9px; color: #4A9EFF; display: block; margin-bottom: 1px; }
   input, select {
@@ -57,6 +65,19 @@
     cursor: pointer;
     margin-top: 3px;
   }
+  .btn-restore {
+    width: 100%;
+    background: transparent;
+    color: #22c55e;
+    border: 1px solid #22c55e55;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 9px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 2px;
+  }
+  .btn-restore:hover { background: #22c55e22; }
   .btn-admin {
     width: 100%;
     background: transparent;
@@ -101,14 +122,37 @@
   .toast.show { opacity: 1; }
   .toast.error { background: #dc2626; }
   hr { margin: 3px 0; border: none; border-top: 1px solid #1B52C422; }
-  
+
+  /* Restore Panel */
+  .restore-section {
+    background: #0a1a0e;
+    border: 1px solid #22c55e33;
+    border-radius: 6px;
+    padding: 6px;
+    margin-top: 2px;
+  }
+  .restore-section label { color: #22c55e; }
+  .restore-row { display: flex; gap: 4px; margin-top: 4px; }
+  .restore-row input { flex: 1; }
+  .restore-row select { flex: 1; }
+  .btn-do-restore {
+    width: 100%;
+    background: #22c55e;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 9px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  /* Admin Panel */
   .admin-panel {
     display: none;
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: #0a0e1aee;
     backdrop-filter: blur(5px);
     z-index: 10000;
@@ -148,7 +192,9 @@
 
 <div class="header" id="drag-handle">
   <div class="header-title">🚫 تسجيل إلغاء</div>
-  <button class="pin-btn" onclick="toggleAlwaysOnTop()">📌</button>
+  <div class="header-btns">
+    <button class="pin-btn" id="pin-btn" onclick="toggleAlwaysOnTop()" title="دائماً في المقدمة">📌</button>
+  </div>
 </div>
 
 <div class="body">
@@ -193,8 +239,38 @@
       <input type="text" id="custom-reason-txt" placeholder="اكتب السبب...">
     </div>
   </div>
+  <div>
+    <label>الديسباتشر المسؤول</label>
+    <input type="text" id="dispatcher-name" placeholder="اسم الديسباتشر">
+  </div>
   <hr>
   <button class="btn-send" onclick="sendEntry()">📋 حفظ + نسخ</button>
+
+  <!-- Restore Section -->
+  <hr>
+  <div class="restore-section" id="restore-section">
+    <label>♻️ استرجاع طلب ملغي</label>
+    <div class="restore-row">
+      <input type="text" id="restore-order" placeholder="رقم الأوردر">
+      <select id="restore-branch">
+        <option value="">الفرع</option>
+        <option>فرع الشعب</option>
+        <option>فرع البنوك</option>
+        <option>فرع الغدير</option>
+        <option>فرع الحرية</option>
+        <option>فرع الدورة</option>
+        <option>فرع بسماية</option>
+        <option>فرع الغزالية</option>
+        <option>فرع الأعظمية</option>
+        <option>فرع حي العامل</option>
+        <option>فرع البوعيثة</option>
+        <option>فرع حي الجهاد</option>
+        <option>فرع شهداء البياع</option>
+      </select>
+    </div>
+    <button class="btn-do-restore" onclick="restoreEntry()">♻️ استرجاع من الإلغاءات</button>
+  </div>
+
   <div class="counter" id="counter">الإلغاءات اليوم: 0</div>
   <div class="sync-status" id="sync-status">☁️ جاري التحميل...</div>
   <button class="btn-admin" onclick="showAdminPanel()">👑 لوحة الأدمن</button>
@@ -219,29 +295,28 @@
 </div>
 
 <script>
-  // Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
     authDomain: "cansel-9df25.firebaseapp.com",
     projectId: "cansel-9df25",
     databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"
   };
-  
-  // انتظر تحميل Firebase SDK أولاً
+
   let database = null;
   let currentEntries = [];
   let firebaseReady = false;
-  
+  let isPinned = false;
+
   function getTodayKey() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
-  
+
   function updateCounter() {
     document.getElementById('counter').textContent = `الإلغاءات اليوم: ${currentEntries.length}`;
     sessionStorage.setItem('current_cancel_entries', JSON.stringify(currentEntries));
   }
-  
+
   function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -250,93 +325,86 @@
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2000);
   }
-  
+
   function setSyncStatus(status, msg = '') {
     const el = document.getElementById('sync-status');
-    if (status === 'synced') {
-      el.textContent = msg || '☁️ متزامن ✓';
-      el.className = 'sync-status synced';
-    } else if (status === 'syncing') {
-      el.textContent = msg || '☁️ جاري...';
-      el.className = 'sync-status syncing';
-    } else if (status === 'error') {
-      el.textContent = msg || '☁️ خطأ في الاتصال';
-      el.className = 'sync-status error';
-    }
+    if (status === 'synced') { el.textContent = msg || '☁️ متزامن ✓'; el.className = 'sync-status synced'; }
+    else if (status === 'syncing') { el.textContent = msg || '☁️ جاري...'; el.className = 'sync-status syncing'; }
+    else if (status === 'error') { el.textContent = msg || '☁️ خطأ في الاتصال'; el.className = 'sync-status error'; }
   }
-  
+
   window.toggleCustom = function() {
     const sel = document.getElementById('reason');
     document.getElementById('custom-wrap').classList.toggle('visible', sel.value === 'مخصص');
   };
-  
+
+  // Always On Top — يفتح نافذة popup صغيرة فوق الكل
   window.toggleAlwaysOnTop = function() {
-    const btn = document.querySelector('.pin-btn');
-    btn.classList.toggle('active');
-    if (btn.classList.contains('active')) {
-      btn.textContent = '📍';
-      showToast('📌 تم فتح نافذة منفصلة', false);
-      window.open(window.location.href, '_blank', 'width=200,height=500,toolbar=no,menubar=no,location=no,status=no');
-    } else {
+    if (isPinned) return; // منع الفتح المزدوج
+    isPinned = true;
+    const btn = document.getElementById('pin-btn');
+    btn.textContent = '📍';
+    btn.classList.add('active');
+    showToast('📌 فُتحت نافذة المقدمة');
+
+    const w = 210, h = 560;
+    const left = Math.max(0, screen.width - w - 10);
+    const top = 10;
+    const popup = window.open(
+      window.location.href,
+      'cancel_popup',
+      `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no,resizable=no,scrollbars=no,alwaysOnTop=yes`
+    );
+    if (!popup) {
+      showToast('⚠️ السماح بالنوافذ المنبثقة', true);
+      isPinned = false;
       btn.textContent = '📌';
+      btn.classList.remove('active');
+    } else {
+      popup.focus();
     }
   };
-  
+
   window.testFirebase = async function() {
-    if (!firebaseReady || !database) {
-      showToast('⚠️ Firebase غير جاهز بعد، انتظر قليلاً', true);
-      return;
-    }
-    
-    setSyncStatus('syncing', '☁️ جاري اختبار الاتصال...');
-    
+    if (!firebaseReady || !database) { showToast('⚠️ Firebase غير جاهز', true); return; }
+    setSyncStatus('syncing', '☁️ جاري الاختبار...');
     try {
       const testRef = database.ref('test_connection');
-      await testRef.set({ timestamp: Date.now(), message: 'اختبار الاتصال' });
+      await testRef.set({ timestamp: Date.now() });
       const snapshot = await testRef.once('value');
       if (snapshot.exists()) {
-        showToast('✅ الاتصال بقاعدة البيانات يعمل', false);
+        showToast('✅ الاتصال يعمل', false);
         setSyncStatus('synced');
         await testRef.remove();
       }
     } catch(e) {
-      console.error("Test error:", e);
-      showToast('❌ فشل الاتصال: ' + e.message, true);
-      setSyncStatus('error', '❌ فشل الاتصال');
+      showToast('❌ فشل: ' + e.message, true);
+      setSyncStatus('error');
     }
   };
-  
+
   async function saveToFirebase(entry) {
     if (!firebaseReady || !database) return false;
     try {
-      const path = `cancellations/${getTodayKey()}/${entry.id}`;
-      await database.ref(path).set(entry);
+      await database.ref(`cancellations/${getTodayKey()}/${entry.id}`).set(entry);
       return true;
     } catch(e) {
-      console.error("Save error:", e);
       showToast('❌ خطأ: ' + e.message, true);
       return false;
     }
   }
-  
+
   async function loadFromFirebase() {
     if (!firebaseReady || !database) return [];
     try {
       const snapshot = await database.ref(`cancellations/${getTodayKey()}`).once('value');
-      if (snapshot.exists()) {
-        return Object.values(snapshot.val());
-      }
-      return [];
-    } catch(e) {
-      console.error("Load error:", e);
-      return [];
-    }
+      return snapshot.exists() ? Object.values(snapshot.val()) : [];
+    } catch(e) { return []; }
   }
-  
+
   function listenToFirebase() {
     if (!firebaseReady || !database) return;
-    const path = `cancellations/${getTodayKey()}`;
-    database.ref(path).on('value', (snapshot) => {
+    database.ref(`cancellations/${getTodayKey()}`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         const cloudEntries = Object.values(snapshot.val());
         cloudEntries.sort((a,b) => a.id - b.id);
@@ -345,66 +413,49 @@
           updateCounter();
           setSyncStatus('synced');
         }
+      } else {
+        currentEntries = [];
+        updateCounter();
       }
-    }, (error) => {
-      console.error("Realtime error:", error);
-      setSyncStatus('error');
-    });
+    }, () => setSyncStatus('error'));
   }
-  
+
   window.sendEntry = async function() {
-    const order = document.getElementById('order-num').value.trim();
-    const phone = document.getElementById('phone-num').value.trim();
-    const branch = document.getElementById('branch').value;
+    const order    = document.getElementById('order-num').value.trim();
+    const phone    = document.getElementById('phone-num').value.trim();
+    const branch   = document.getElementById('branch').value;
+    const dispatcher = document.getElementById('dispatcher-name').value.trim();
     const reasonSelect = document.getElementById('reason');
     let reason = reasonSelect.value;
-    
-    if (reason === 'مخصص') {
-      reason = document.getElementById('custom-reason-txt').value.trim();
-    }
-    
-    if (!order) { showToast('⚠️ رقم الأوردر مطلوب', true); return; }
+    if (reason === 'مخصص') reason = document.getElementById('custom-reason-txt').value.trim();
+
+    if (!order)  { showToast('⚠️ رقم الأوردر مطلوب', true); return; }
     if (!branch) { showToast('⚠️ الفرع مطلوب', true); return; }
     if (!reason) { showToast('⚠️ السبب مطلوب', true); return; }
-    
-    if (!firebaseReady) {
-      showToast('⚠️ Firebase غير جاهز، انتظر قليلاً', true);
-      return;
-    }
-    
+    if (!firebaseReady) { showToast('⚠️ Firebase غير جاهز', true); return; }
+
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ar-IQ', {hour:'2-digit', minute:'2-digit'});
-    
     const entry = {
-      id: Date.now(),
-      order: order,
-      phone: phone || '',
-      branch: branch,
-      reason: reason,
-      time: timeStr,
-      date: getTodayKey(),
-      createdAt: now.getTime()
+      id: Date.now(), order, phone: phone || '', branch, reason,
+      dispatcher: dispatcher || '', time: timeStr,
+      date: getTodayKey(), createdAt: now.getTime()
     };
-    
+
     setSyncStatus('syncing', '☁️ جاري الحفظ...');
-    
     const saved = await saveToFirebase(entry);
-    
-    if (saved) {
-      currentEntries.push(entry);
-      currentEntries.sort((a,b) => a.id - b.id);
-      updateCounter();
-      setSyncStatus('synced');
-      showToast(`✅ تم حفظ ${order}`, false);
-    } else {
-      setSyncStatus('error');
-      showToast(`❌ فشل حفظ ${order}`, true);
-      return;
-    }
-    
-    // Copy to clipboard
-    const msg = `🚫 إلغاء أوردر\n📦 رقم الأوردر: ${order}\n${phone ? `📞 رقم الزبون: ${phone}\n` : ''}🏪 الفرع: ${branch}\n❌ السبب: ${reason}\n⏰ الوقت: ${timeStr}`;
-    
+    if (!saved) { setSyncStatus('error'); showToast(`❌ فشل حفظ ${order}`, true); return; }
+
+    currentEntries.push(entry);
+    currentEntries.sort((a,b) => a.id - b.id);
+    updateCounter();
+    setSyncStatus('synced');
+    showToast(`✅ تم حفظ ${order}`, false);
+
+    // ✅ الكليشة المطلوبة فقط — مع @ قبل اسم الديسباتشر
+    const dispatcherTag = dispatcher ? `@${dispatcher}` : '@—';
+    const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}\n${dispatcherTag}`;
+
     try {
       await navigator.clipboard.writeText(msg);
     } catch(e) {
@@ -415,179 +466,149 @@
       document.execCommand('copy');
       document.body.removeChild(ta);
     }
-    
-    // Clear form
+
+    // مسح الحقول
     document.getElementById('order-num').value = '';
     document.getElementById('phone-num').value = '';
     document.getElementById('branch').value = '';
     document.getElementById('reason').value = '';
     document.getElementById('custom-reason-txt').value = '';
+    document.getElementById('dispatcher-name').value = '';
     document.getElementById('custom-wrap').classList.remove('visible');
     document.getElementById('order-num').focus();
   };
-  
-  // Admin Functions
-  window.showAdminPanel = function() {
-    document.getElementById('adminPanel').classList.add('show');
+
+  // ♻️ استرجاع طلب ملغي — حذف من Firebase بناءً على رقم الأوردر + الفرع
+  window.restoreEntry = async function() {
+    const orderNum = document.getElementById('restore-order').value.trim();
+    const branch   = document.getElementById('restore-branch').value;
+
+    if (!orderNum) { showToast('⚠️ أدخل رقم الأوردر', true); return; }
+    if (!branch)   { showToast('⚠️ اختر الفرع', true); return; }
+    if (!firebaseReady) { showToast('⚠️ Firebase غير جاهز', true); return; }
+
+    setSyncStatus('syncing', '☁️ جاري البحث...');
+
+    // ابحث عن الإدخال المطابق
+    const match = currentEntries.find(e => e.order === orderNum && e.branch === branch);
+    if (!match) {
+      showToast(`❌ لم يُعثر على أوردر ${orderNum} في ${branch}`, true);
+      setSyncStatus('synced');
+      return;
+    }
+
+    try {
+      await database.ref(`cancellations/${getTodayKey()}/${match.id}`).remove();
+      currentEntries = currentEntries.filter(e => e.id !== match.id);
+      updateCounter();
+      setSyncStatus('synced');
+      showToast(`✅ تم استرجاع أوردر ${orderNum}`, false);
+      document.getElementById('restore-order').value = '';
+      document.getElementById('restore-branch').value = '';
+    } catch(e) {
+      showToast('❌ فشل الاسترجاع: ' + e.message, true);
+      setSyncStatus('error');
+    }
   };
-  
-  window.closeAdminPanel = function() {
+
+  // Admin
+  window.showAdminPanel  = () => document.getElementById('adminPanel').classList.add('show');
+  window.closeAdminPanel = () => {
     document.getElementById('adminPanel').classList.remove('show');
     document.getElementById('adminActions').style.display = 'none';
     document.getElementById('adminPass').value = '';
   };
-  
-  window.checkAdmin = function() {
-    const pass = document.getElementById('adminPass').value;
-    if (pass === '1') {
+  window.checkAdmin = () => {
+    if (document.getElementById('adminPass').value === '1') {
       document.getElementById('adminActions').style.display = 'block';
-      showToast('✅ مرحباً أيها الأدمن', false);
+      showToast('✅ مرحباً أيها الأدمن');
     } else {
       showToast('❌ كلمة المرور غير صحيحة', true);
     }
   };
-  
+
   window.generateWordReport = function() {
-    if (currentEntries.length === 0) {
-      showToast('لا توجد بيانات للتصدير', true);
-      return;
-    }
-    
+    if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
     const grouped = {};
-    currentEntries.forEach(entry => {
-      if (!grouped[entry.branch]) grouped[entry.branch] = [];
-      grouped[entry.branch].push(entry);
-    });
-    
-    let html = `<!DOCTYPE html>
-    <html dir="rtl">
-    <head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
-    <style>
-      body { font-family: Arial; margin: 20px; }
-      h1 { color: #1B52C4; text-align: center; }
-      .branch { margin-bottom: 30px; }
-      .branch h2 { background: #1B52C4; color: white; padding: 8px; border-radius: 5px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-      th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
-      th { background: #f2f2f2; }
-    </style>
-    </head>
-    <body>
-    <h1>📊 تقرير الإلغاءات</h1>
-    <p style="text-align:center">التاريخ: ${new Date().toLocaleDateString('ar-IQ')}</p>`;
-    
+    currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch] = []; grouped[e.branch].push(e); });
+    let html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
+    <style>body{font-family:Arial;margin:20px;}h1{color:#1B52C4;text-align:center;}.branch{margin-bottom:30px;}.branch h2{background:#1B52C4;color:white;padding:8px;border-radius:5px;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{border:1px solid #ddd;padding:6px;text-align:center;}th{background:#f2f2f2;}</style>
+    </head><body><h1>📊 تقرير الإلغاءات</h1><p style="text-align:center">التاريخ: ${new Date().toLocaleDateString('ar-IQ')}</p>`;
     for (const [branch, entries] of Object.entries(grouped)) {
-      html += `<div class="branch">
-        <h2>🏪 ${branch} (${entries.length})</h2>
-        <table><thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>السبب</th><th>الوقت</th></tr></thead><tbody>`;
-      entries.forEach((e, i) => {
-        html += `<tr><td>${i+1}</td><td>${e.order}</td><td dir="ltr">${e.phone || '—'}</td><td>${e.reason}</td><td>${e.time}</td></tr>`;
-      });
+      html += `<div class="branch"><h2>🏪 ${branch} (${entries.length})</h2><table><thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>السبب</th><th>الديسباتشر</th><th>الوقت</th></tr></thead><tbody>`;
+      entries.forEach((e,i) => { html += `<tr><td>${i+1}</td><td>${e.order}</td><td dir="ltr">${e.phone||'—'}</td><td>${e.reason}</td><td>${e.dispatcher?'@'+e.dispatcher:'—'}</td><td>${e.time}</td></tr>`; });
       html += `</tbody></table></div>`;
     }
     html += `<p style="text-align:center">إجمالي الإلغاءات: ${currentEntries.length}</p></body></html>`;
-    
-    const blob = new Blob([html], { type: 'application/msword' });
+    const blob = new Blob([html], {type:'application/msword'});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `تقرير_الالغاءات_${getTodayKey()}.doc`;
     link.click();
     URL.revokeObjectURL(link.href);
-    showToast('✅ تم تصدير التقرير', false);
+    showToast('✅ تم تصدير التقرير');
   };
-  
+
   window.copyAllToClipboard = function() {
-    if (currentEntries.length === 0) {
-      showToast('لا توجد بيانات', true);
-      return;
-    }
-    
-    let text = `📊 تقرير الإلغاءات - ${getTodayKey()}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
+    let text = `📊 تقرير الإلغاءات - ${getTodayKey()}\n${'━'.repeat(38)}\n\n`;
     const grouped = {};
-    currentEntries.forEach(e => {
-      if (!grouped[e.branch]) grouped[e.branch] = [];
-      grouped[e.branch].push(e);
-    });
-    
+    currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch] = []; grouped[e.branch].push(e); });
     for (const [branch, entries] of Object.entries(grouped)) {
       text += `🏪 ${branch}\n`;
-      text += `┌─────┬──────────┬────────────────┬──────────────┐\n`;
-      text += `│  #  │ الأوردر  │   رقم الزبون   │    السبب     │\n`;
-      text += `├─────┼──────────┼────────────────┼──────────────┤\n`;
-      entries.forEach((e, i) => {
-        text += `│ ${(i+1).toString().padEnd(3)} │ ${e.order.padEnd(8)} │ ${(e.phone || '—').padEnd(14)} │ ${e.reason.padEnd(12)} │\n`;
-      });
-      text += `└─────┴──────────┴────────────────┴──────────────┘\n\n`;
+      entries.forEach((e,i) => { text += `${i+1}. أوردر ${e.order} | ${e.reason}${e.dispatcher?' | @'+e.dispatcher:''}\n`; });
+      text += '\n';
     }
-    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📦 إجمالي الإلغاءات: ${currentEntries.length}`;
-    
+    text += `${'━'.repeat(38)}\n📦 إجمالي الإلغاءات: ${currentEntries.length}`;
     navigator.clipboard.writeText(text);
-    showToast('✅ تم نسخ كل الإلغاءات', false);
+    showToast('✅ تم نسخ كل الإلغاءات');
   };
-  
+
   window.clearAllData = function() {
-    if (confirm('⚠️ تحذير: هل أنت متأكد من حذف كل بيانات اليوم؟')) {
+    if (confirm('⚠️ هل أنت متأكد من حذف كل بيانات اليوم؟')) {
       if (database) {
         database.ref(`cancellations/${getTodayKey()}`).remove().then(() => {
-          currentEntries = [];
-          updateCounter();
-          showToast('✅ تم حذف كل البيانات', false);
-        }).catch(() => {
-          showToast('❌ فشل الحذف', true);
-        });
+          currentEntries = []; updateCounter();
+          showToast('✅ تم حذف كل البيانات');
+        }).catch(() => showToast('❌ فشل الحذف', true));
       }
     }
   };
-  
-  // Initialize Firebase after SDK loads
+
   function initFirebase() {
     try {
       if (typeof firebase !== 'undefined') {
         firebase.initializeApp(firebaseConfig);
         database = firebase.database();
         firebaseReady = true;
-        console.log("✅ Firebase initialized");
         setSyncStatus('synced');
-        
-        // Check connection
-        const connectedRef = database.ref('.info/connected');
-        connectedRef.on('value', (snap) => {
+        database.ref('.info/connected').on('value', (snap) => {
           if (snap.val() === true) {
-            console.log("✅ Connected to Firebase");
             setSyncStatus('synced');
             loadInitialData();
             listenToFirebase();
           } else {
-            console.log("❌ Disconnected");
             setSyncStatus('error', '❌ غير متصل');
           }
         });
       } else {
-        console.error("Firebase SDK not loaded");
         setSyncStatus('error', '❌ خطأ في التحميل');
         setTimeout(initFirebase, 1000);
       }
     } catch(e) {
-      console.error("Init error:", e);
       setSyncStatus('error', '❌ خطأ في التهيئة');
       setTimeout(initFirebase, 1000);
     }
   }
-  
+
   async function loadInitialData() {
-    try {
-      const cloudData = await loadFromFirebase();
-      if (cloudData.length > 0) {
-        currentEntries = cloudData;
-        currentEntries.sort((a,b) => a.id - b.id);
-        updateCounter();
-      }
-    } catch(e) {
-      console.error("Load initial error:", e);
+    const cloudData = await loadFromFirebase();
+    if (cloudData.length > 0) {
+      currentEntries = cloudData.sort((a,b) => a.id - b.id);
+      updateCounter();
     }
   }
-  
-  // Start after DOM is ready
+
   document.addEventListener('DOMContentLoaded', () => {
     currentEntries = [];
     updateCounter();
@@ -595,9 +616,7 @@
   });
 </script>
 
-<!-- Firebase SDK - الروابط الصحيحة -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
 </body>
 </html>
