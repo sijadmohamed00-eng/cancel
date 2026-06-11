@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الإلغاءات</title>
+<title>تسجيل الإلغاءات - مزامنة فورية</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -77,8 +77,8 @@
   .sync-status {
     text-align: center;
     font-size: 8px;
-    color: #4A9EFF66;
     cursor: pointer;
+    padding: 2px 0;
   }
   .sync-status.synced { color: #16a34a; }
   .sync-status.error { color: #ef4444; }
@@ -196,7 +196,7 @@
   <hr>
   <button class="btn-send" onclick="sendEntry()">📋 حفظ + نسخ</button>
   <div class="counter" id="counter">الإلغاءات اليوم: 0</div>
-  <div class="sync-status" id="sync-status" onclick="syncFromCloud()">☁️ متزامن</div>
+  <div class="sync-status" id="sync-status">☁️ جاري الاتصال...</div>
   <button class="btn-admin" onclick="showAdminPanel()">👑 لوحة الأدمن</button>
 </div>
 
@@ -218,7 +218,7 @@
 </div>
 
 <script>
-  // Firebase Config
+  // Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
     authDomain: "cansel-9df25.firebaseapp.com",
@@ -228,32 +228,15 @@
   
   let database;
   let currentEntries = [];
-  let isOnline = true;
   
   function getTodayKey() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
   
-  function loadLocal() {
-    try {
-      const key = `cancel_${getTodayKey()}`;
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : [];
-    } catch(e) { return []; }
-  }
-  
-  function saveLocal(entries) {
-    try {
-      const key = `cancel_${getTodayKey()}`;
-      localStorage.setItem(key, JSON.stringify(entries));
-      currentEntries = entries;
-      updateCounter();
-    } catch(e) { console.error("Save error:", e); }
-  }
-  
   function updateCounter() {
     document.getElementById('counter').textContent = `الإلغاءات اليوم: ${currentEntries.length}`;
+    sessionStorage.setItem('current_cancel_entries', JSON.stringify(currentEntries));
   }
   
   function showToast(msg, isError = false) {
@@ -265,20 +248,17 @@
     setTimeout(() => t.classList.remove('show'), 2000);
   }
   
-  function setSyncStatus(status) {
+  function setSyncStatus(status, msg = '') {
     const el = document.getElementById('sync-status');
     if (status === 'synced') {
-      el.textContent = '☁️ متزامن ✓';
-      el.classList.add('synced');
-      el.classList.remove('error', 'syncing');
+      el.textContent = msg || '☁️ متزامن ✓';
+      el.className = 'sync-status synced';
     } else if (status === 'syncing') {
-      el.textContent = '☁️ جاري المزامنة...';
-      el.classList.add('syncing');
-      el.classList.remove('synced', 'error');
+      el.textContent = msg || '☁️ جاري المزامنة...';
+      el.className = 'sync-status syncing';
     } else if (status === 'error') {
-      el.textContent = '☁️ غير متزامن';
-      el.classList.add('error');
-      el.classList.remove('synced', 'syncing');
+      el.textContent = msg || '☁️ غير متزامن';
+      el.className = 'sync-status error';
     }
   }
   
@@ -299,16 +279,55 @@
     }
   };
   
-  async function uploadToFirebase(entry) {
+  // Save to Firebase
+  async function saveToFirebase(entry) {
     if (!database) return false;
     try {
       const path = `cancellations/${getTodayKey()}/${entry.id}`;
       await database.ref(path).set(entry);
       return true;
     } catch(e) {
-      console.error("Upload error:", e);
+      console.error("Firebase save error:", e);
       return false;
     }
+  }
+  
+  // Load from Firebase
+  async function loadFromFirebase() {
+    if (!database) return [];
+    try {
+      const snapshot = await database.ref(`cancellations/${getTodayKey()}`).once('value');
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        return Object.values(data);
+      }
+      return [];
+    } catch(e) {
+      console.error("Firebase load error:", e);
+      return [];
+    }
+  }
+  
+  // Listen to realtime changes
+  function listenToFirebase() {
+    if (!database) return;
+    const path = `cancellations/${getTodayKey()}`;
+    database.ref(path).on('value', async (snapshot) => {
+      if (snapshot.exists()) {
+        const cloudEntries = Object.values(snapshot.val());
+        cloudEntries.sort((a,b) => a.id - b.id);
+        
+        // Check if data changed
+        if (JSON.stringify(cloudEntries) !== JSON.stringify(currentEntries)) {
+          currentEntries = cloudEntries;
+          updateCounter();
+          setSyncStatus('synced');
+        }
+      }
+    }, (error) => {
+      console.error("Realtime error:", error);
+      setSyncStatus('error', '⚠️ فقد الاتصال');
+    });
   }
   
   window.sendEntry = async function() {
@@ -340,21 +359,22 @@
       createdAt: now.getTime()
     };
     
-    // Save to local first
-    const newEntries = [...currentEntries, entry];
-    saveLocal(newEntries);
+    setSyncStatus('syncing', '☁️ جاري الحفظ...');
     
-    setSyncStatus('syncing');
+    // Save to Firebase
+    const saved = await saveToFirebase(entry);
     
-    // Try to upload to Firebase
-    const uploaded = await uploadToFirebase(entry);
-    
-    if (uploaded) {
+    if (saved) {
+      // Add to local array
+      currentEntries.push(entry);
+      currentEntries.sort((a,b) => a.id - b.id);
+      updateCounter();
       setSyncStatus('synced');
       showToast(`✅ تم حفظ ${order}`, false);
     } else {
-      setSyncStatus('error');
-      showToast(`⚠️ تم حفظ ${order} محلياً فقط`, true);
+      setSyncStatus('error', '⚠️ فشل الحفظ');
+      showToast(`❌ فشل حفظ ${order}`, true);
+      return;
     }
     
     // Copy to clipboard
@@ -379,44 +399,6 @@
     document.getElementById('custom-reason-txt').value = '';
     document.getElementById('custom-wrap').classList.remove('visible');
     document.getElementById('order-num').focus();
-  };
-  
-  window.syncFromCloud = async function() {
-    if (!database) {
-      showToast('⚠️ لا يوجد اتصال بقاعدة البيانات', true);
-      return;
-    }
-    
-    setSyncStatus('syncing');
-    
-    try {
-      const snapshot = await database.ref(`cancellations/${getTodayKey()}`).once('value');
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        const cloudEntries = Object.values(data);
-        const merged = [...currentEntries];
-        cloudEntries.forEach(cloudEntry => {
-          if (!merged.find(e => e.id === cloudEntry.id)) {
-            merged.push(cloudEntry);
-          }
-        });
-        merged.sort((a,b) => a.id - b.id);
-        saveLocal(merged);
-        showToast('✅ تمت المزامنة', false);
-        setSyncStatus('synced');
-      } else {
-        // Upload all local entries to cloud
-        for (const entry of currentEntries) {
-          await uploadToFirebase(entry);
-        }
-        setSyncStatus('synced');
-        showToast('✅ تم رفع البيانات للسحابة', false);
-      }
-    } catch(e) {
-      console.error("Sync error:", e);
-      setSyncStatus('error');
-      showToast('⚠️ فشل الاتصال بالسحابة', true);
-    }
   };
   
   // Admin Functions
@@ -472,11 +454,11 @@
     for (const [branch, entries] of Object.entries(grouped)) {
       html += `<div class="branch">
         <h2>🏪 ${branch} (${entries.length})</h2>
-        <table><thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>السبب</th><th>الوقت</th></tr></thead><tbody>`;
+        <table><thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>السبب</th><th>الوقت</th><tr></thead><tbody>`;
       entries.forEach((e, i) => {
-        html += `<tr><td>${i+1}</td><td>${e.order}</td><td>${e.phone || '—'}</td><td>${e.reason}</td><td>${e.time}</td></tr>`;
+        html += `<tr><td>${i+1}</td><td>${e.order}</td><td dir="ltr">${e.phone || '—'}</td><td>${e.reason}</td><td>${e.time}</td></tr>`;
       });
-      html += `</tbody></table></div>`;
+      html += `</tbody>}</div>`;
     }
     html += `<p style="text-align:center">إجمالي الإلغاءات: ${currentEntries.length}</p></body></html>`;
     
@@ -519,49 +501,67 @@
   };
   
   window.clearAllData = function() {
-    if (confirm('⚠️ هل أنت متأكد من حذف كل البيانات؟')) {
-      saveLocal([]);
+    if (confirm('⚠️ تحذير: هل أنت متأكد من حذف كل بيانات اليوم؟')) {
       if (database) {
-        database.ref(`cancellations/${getTodayKey()}`).remove();
+        database.ref(`cancellations/${getTodayKey()}`).remove().then(() => {
+          currentEntries = [];
+          updateCounter();
+          showToast('✅ تم حذف كل البيانات', false);
+        }).catch(() => {
+          showToast('❌ فشل الحذف', true);
+        });
       }
-      showToast('✅ تم حذف كل البيانات', false);
     }
   };
   
-  // Initialize Firebase
-  try {
-    firebase.initializeApp(firebaseConfig);
-    database = firebase.database();
-    console.log("✅ Firebase initialized");
-    setSyncStatus('synced');
-  } catch(e) {
-    console.error("Firebase init error:", e);
-    setSyncStatus('error');
+  // Initialize Firebase and load data
+  async function init() {
+    try {
+      firebase.initializeApp(firebaseConfig);
+      database = firebase.database();
+      console.log("✅ Firebase connected");
+      
+      setSyncStatus('syncing', '☁️ جاري التحميل...');
+      
+      // Load initial data
+      const cloudData = await loadFromFirebase();
+      if (cloudData.length > 0) {
+        currentEntries = cloudData;
+        currentEntries.sort((a,b) => a.id - b.id);
+        updateCounter();
+      }
+      
+      setSyncStatus('synced');
+      listenToFirebase();
+      
+    } catch(e) {
+      console.error("Firebase init error:", e);
+      setSyncStatus('error', '❌ خطأ في الاتصال');
+      showToast('❌ فشل الاتصال بقاعدة البيانات', true);
+    }
   }
   
-  // Load local data
-  currentEntries = loadLocal();
-  updateCounter();
+  // Start
+  init();
   
-  // Listen for online/offline
   window.addEventListener('online', () => {
-    isOnline = true;
-    showToast('🌐 عاد الاتصال بالإنترنت', false);
-    setTimeout(() => window.syncFromCloud(), 1000);
+    showToast('🌐 تم الاتصال بالإنترنت', false);
+    setSyncStatus('syncing', '☁️ جاري المزامنة...');
+    setTimeout(() => {
+      loadFromFirebase().then(data => {
+        if (data.length > 0) {
+          currentEntries = data;
+          updateCounter();
+        }
+        setSyncStatus('synced');
+      });
+    }, 1000);
   });
   
   window.addEventListener('offline', () => {
-    isOnline = false;
-    setSyncStatus('error');
+    setSyncStatus('error', '⚠️ لا يوجد إنترنت');
     showToast('⚠️ لا يوجد اتصال بالإنترنت', true);
   });
-  
-  // Auto sync after 5 seconds
-  setTimeout(() => {
-    if (database && navigator.onLine) {
-      window.syncFromCloud();
-    }
-  }, 5000);
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js"></script>
