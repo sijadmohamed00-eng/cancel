@@ -24,7 +24,6 @@
     margin: 0 auto;
   }
 
-  /* رأس التقرير */
   .report-header {
     text-align: center;
     margin-bottom: 30px;
@@ -48,7 +47,6 @@
     color: #555;
   }
 
-  /* أزرار التحكم */
   .controls {
     margin-bottom: 20px;
     display: flex;
@@ -91,7 +89,6 @@
     background: #16a34a !important;
   }
 
-  /* كل فرع في قسم منفصل */
   .branch-section {
     margin-bottom: 35px;
     border: 1px solid #ddd;
@@ -123,7 +120,7 @@
     font-weight: bold;
   }
 
-  /* الجدول - بدون عمود الوقت */
+  /* ترتيب الأعمدة: # | رقم الأوردر | السبب | رقم الزبون */
   .branch-table {
     width: 100%;
     border-collapse: collapse;
@@ -146,16 +143,9 @@
     background: #fff;
   }
 
-  /* عمود الرقم المسلسل */
   .serial-col {
     width: 50px;
     background: #f9f9f9;
-  }
-
-  .empty-row td {
-    text-align: center;
-    padding: 30px;
-    color: #999;
   }
 
   .footer {
@@ -183,7 +173,6 @@
 <body>
 
 <div class="container">
-  <!-- رأس التقرير -->
   <div class="report-header">
     <h1>شركة عصر الشرق</h1>
     <h3>لإدارة المطاعم</h3>
@@ -192,7 +181,6 @@
     <hr>
   </div>
 
-  <!-- أزرار التحكم -->
   <div class="controls">
     <input type="text" id="search-input" placeholder="🔍 بحث برقم الأوردر أو رقم الزبون...">
     <button onclick="loadData()" id="refreshBtn">🔄 تحديث</button>
@@ -200,7 +188,6 @@
     <button onclick="window.print()" class="btn-print">🖨️ طباعة</button>
   </div>
 
-  <!-- هنا سيتم عرض الأفرع -->
   <div id="branches-container"></div>
 
   <div class="footer">
@@ -211,7 +198,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
-  // Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
     authDomain: "cansel-9df25.firebaseapp.com",
@@ -224,7 +210,6 @@
 
   let allEntries = [];
 
-  // قائمة الفروع بالترتيب
   const branchesOrder = [
     "فرع الشعب", "فرع البنوك", "فرع الغدير", "فرع الحرية",
     "فرع الدورة", "فرع بسماية", "فرع الغزالية", "فرع الأعظمية",
@@ -236,14 +221,12 @@
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  // عرض التاريخ
   function displayDate() {
     const now = new Date();
     const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
     document.getElementById('report-date').textContent = dateStr;
   }
 
-  // تجميع حسب الفرع
   function groupByBranch(entries) {
     const grouped = {};
     branchesOrder.forEach(branch => { grouped[branch] = []; });
@@ -257,7 +240,7 @@
     return grouped;
   }
 
-  // عرض الأفرع - كل فرع لوحده (بدون عمود الوقت)
+  // التعديل الرئيسي هنا - ترتيب الأعمدة الصحيح بدون وقت
   function renderBranches() {
     const searchText = document.getElementById('search-input').value.toLowerCase();
     let filtered = allEntries;
@@ -299,7 +282,8 @@
               <tbody>
         `;
         
-        entries.forEach((entry, idx) => {
+        for (let idx = 0; idx < entries.length; idx++) {
+          const entry = entries[idx];
           html += `
             <tr>
               <td class="serial-col">${idx + 1}</td>
@@ -308,7 +292,7 @@
               <td dir="ltr">${entry.phone || '—'}</td>
             </tr>
           `;
-        });
+        }
         
         html += `
               </tbody>
@@ -326,7 +310,6 @@
     document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-IQ');
   }
 
-  // تحميل البيانات من Firebase
   function loadData() {
     const refreshBtn = document.getElementById('refreshBtn');
     refreshBtn.textContent = '⏳ جاري...';
@@ -362,7 +345,6 @@
 
   window.loadData = loadData;
 
-  // تصدير إلى Word بنفس التنسيق (بدون وقت)
   function exportToWord() {
     if (allEntries.length === 0) {
       alert('لا توجد بيانات للتصدير');
@@ -458,7 +440,6 @@
   
   window.exportToWord = exportToWord;
 
-  // استماع للتحديثات المباشرة
   function listenToRealtime() {
     const todayKey = getTodayKey();
     database.ref(`cancellations/${todayKey}`).on('value', (snapshot) => {
@@ -478,10 +459,8 @@
     });
   }
 
-  // بحث فوري
   document.getElementById('search-input').addEventListener('input', renderBranches);
   
-  // تهيئة الصفحة
   displayDate();
   listenToRealtime();
   loadData();
