@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقرير الإلغاءات اليومي</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f0f4ff;
+    color: #111;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    color: #1B52C4;
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+
+  .date {
+    text-align: center;
+    color: #555;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  select, button {
+    padding: 7px 12px;
+    border-radius: 6px;
+    border: 1.5px solid #1B52C455;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  button {
+    background: #1B52C4;
+    color: #fff;
+    border-color: #1B52C4;
+    font-weight: 700;
+  }
+
+  button:hover { background: #1440a0; }
+
+  .btn-red {
+    background: #dc2626;
+    border-color: #dc2626;
+  }
+
+  .btn-red:hover { background: #b91c1c; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px #1B52C422;
+    font-size: 13px;
+  }
+
+  thead th {
+    background: #1B52C4;
+    color: #fff;
+    padding: 10px 12px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  tbody tr:nth-child(even) { background: #f0f4ff; }
+
+  tbody td {
+    padding: 8px 12px;
+    text-align: center;
+    border-bottom: 1px solid #e0e8ff;
+  }
+
+  .branch-badge {
+    background: #1B52C411;
+    color: #1B52C4;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .reason-badge {
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .reason-زبون     { background: #fee2e2; color: #dc2626; }
+  .reason-تكرار    { background: #fef3c7; color: #d97706; }
+  .reason-تحويل    { background: #dbeafe; color: #1d4ed8; }
+  .reason-عدمرد   { background: #f3f4f6; color: #374151; }
+  .reason-خارجالزون { background: #ede9fe; color: #7c3aed; }
+  .reason-مخصص    { background: #d1fae5; color: #059669; }
+
+  .empty {
+    text-align: center;
+    color: #888;
+    padding: 30px;
+    font-size: 13px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    background: #fff;
+    border: 1.5px solid #1B52C433;
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .stat-num { font-size: 22px; font-weight: 800; color: #1B52C4; }
+  .stat-lbl { font-size: 11px; color: #555; }
+
+  .del-btn {
+    background: transparent;
+    border: none;
+    color: #dc2626;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+  }
+
+  @media print {
+    .controls, .del-btn { display: none; }
+    body { background: #fff; padding: 5px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🚫 تقرير الإلغاءات اليومي</h1>
+<div class="date" id="date-display"></div>
+
+<div class="stats" id="stats"></div>
+
+<div class="controls">
+  <select id="filter-branch">
+    <option value="">كل الفروع</option>
+    <option>فرع الشعب</option>
+    <option>فرع البنوك</option>
+    <option>فرع الغدير</option>
+    <option>فرع الحرية</option>
+    <option>فرع الدورة</option>
+    <option>فرع بسماية</option>
+    <option>فرع الغزالية</option>
+    <option>فرع الأعظمية</option>
+    <option>فرع حي العامل</option>
+    <option>فرع البوعيثة</option>
+    <option>فرع حي الجهاد</option>
+    <option>فرع شهداء البياع</option>
+  </select>
+  <button onclick="applyFilter()">🔍 فلتر</button>
+  <button onclick="printTable()">🖨️ طباعة</button>
+  <button onclick="exportText()">📋 نسخ الكل</button>
+  <button class="btn-red" onclick="clearAll()">🗑️ مسح اليوم</button>
+</div>
+
+<table id="data-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>رقم الأوردر</th>
+      <th>رقم الزبون</th>
+      <th>الفرع</th>
+      <th>السبب</th>
+      <th>الوقت</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="table-body">
+  </tbody>
+</table>
+
+<script>
+  const STORAGE_KEY = 'cancel_entries_v1';
+
+  function getToday() {
+    return new Date().toLocaleDateString('ar-IQ', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  }
+
+  function getTodayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  }
+
+  function load() {
+    try {
+      const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return all[getTodayKey()] || [];
+    } catch { return []; }
+  }
+
+  function save(entries) {
+    try {
+      const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      all[getTodayKey()] = entries;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    } catch {}
+  }
+
+  function reasonClass(r) {
+    return 'reason-' + r.replace(/\s/g, '');
+  }
+
+  function render(filterBranch) {
+    const entries = load();
+    const filtered = filterBranch ? entries.filter(e => e.branch === filterBranch) : entries;
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">لا يوجد إلغاءات مسجلة اليوم</td></tr>`;
+    } else {
+      filtered.forEach((e, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td><strong>${e.order}</strong></td>
+          <td style="direction:ltr">${e.phone || '—'}</td>
+          <td><span class="branch-badge">${e.branch}</span></td>
+          <td><span class="reason-badge ${reasonClass(e.reason)}">${e.reason}</span></td>
+          <td style="font-size:11px;color:#666">${e.time}</td>
+          <td><button class="del-btn" onclick="deleteEntry(${e.id})">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Stats
+    const stats = document.getElementById('stats');
+    const total = entries.length;
+    const byBranch = {};
+    entries.forEach(e => byBranch[e.branch] = (byBranch[e.branch] || 0) + 1);
+    const topBranch = Object.entries(byBranch).sort((a,b)=>b[1]-a[1])[0];
+
+    stats.innerHTML = `
+      <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">إجمالي الإلغاءات</div></div>
+      ${topBranch ? `<div class="stat-card"><div class="stat-num">${topBranch[1]}</div><div class="stat-lbl">${topBranch[0]}</div></div>` : ''}
+    `;
+  }
+
+  function deleteEntry(id) {
+    if (!confirm('حذف هذا السجل؟')) return;
+    const entries = load().filter(e => e.id !== id);
+    save(entries);
+    render(document.getElementById('filter-branch').value);
+  }
+
+  function applyFilter() {
+    render(document.getElementById('filter-branch').value);
+  }
+
+  function clearAll() {
+    if (!confirm('مسح كل إلغاءات اليوم؟')) return;
+    save([]);
+    render('');
+  }
+
+  function printTable() {
+    window.print();
+  }
+
+  function exportText() {
+    const entries = load();
+    if (!entries.length) { alert('لا يوجد بيانات'); return; }
+
+    // Group by branch
+    const byBranch = {};
+    entries.forEach(e => {
+      if (!byBranch[e.branch]) byBranch[e.branch] = [];
+      byBranch[e.branch].push(e);
+    });
+
+    let text = `📊 تقرير الإلغاءات - ${getToday()}\n`;
+    text += `━━━━━━━━━━━━━━━━━━\n`;
+
+    for (const [branch, list] of Object.entries(byBranch)) {
+      text += `\n🏪 ${branch} (${list.length} إلغاء)\n`;
+      list.forEach((e, i) => {
+        text += `${i+1}. أوردر ${e.order}${e.phone ? ' | ' + e.phone : ''} | ${e.reason}\n`;
+      });
+    }
+
+    text += `\n━━━━━━━━━━━━━━━━━━\nالإجمالي: ${entries.length} إلغاء`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      alert('✅ تم نسخ التقرير الكامل!');
+    });
+  }
+
+  // Listen for new entries from main app
+  window.addEventListener('storage', () => render(document.getElementById('filter-branch').value));
+
+  document.getElementById('date-display').textContent = getToday();
+  render('');
+</script>
+
+</body>
+</html>
