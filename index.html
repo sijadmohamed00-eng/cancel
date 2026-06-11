@@ -239,10 +239,6 @@
       <input type="text" id="custom-reason-txt" placeholder="اكتب السبب...">
     </div>
   </div>
-  <div>
-    <label>الديسباتشر المسؤول</label>
-    <input type="text" id="dispatcher-name" placeholder="اسم الديسباتشر">
-  </div>
   <hr>
   <button class="btn-send" onclick="sendEntry()">📋 حفظ + نسخ</button>
 
@@ -424,7 +420,6 @@
     const order    = document.getElementById('order-num').value.trim();
     const phone    = document.getElementById('phone-num').value.trim();
     const branch   = document.getElementById('branch').value;
-    const dispatcher = document.getElementById('dispatcher-name').value.trim();
     const reasonSelect = document.getElementById('reason');
     let reason = reasonSelect.value;
     if (reason === 'مخصص') reason = document.getElementById('custom-reason-txt').value.trim();
@@ -438,8 +433,7 @@
     const timeStr = now.toLocaleTimeString('ar-IQ', {hour:'2-digit', minute:'2-digit'});
     const entry = {
       id: Date.now(), order, phone: phone || '', branch, reason,
-      dispatcher: dispatcher || '', time: timeStr,
-      date: getTodayKey(), createdAt: now.getTime()
+      time: timeStr, date: getTodayKey(), createdAt: now.getTime()
     };
 
     setSyncStatus('syncing', '☁️ جاري الحفظ...');
@@ -452,9 +446,7 @@
     setSyncStatus('synced');
     showToast(`✅ تم حفظ ${order}`, false);
 
-    // ✅ الكليشة المطلوبة فقط — مع @ قبل اسم الديسباتشر
-    const dispatcherTag = dispatcher ? `@${dispatcher}` : '@—';
-    const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}\n${dispatcherTag}`;
+    const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}`;
 
     try {
       await navigator.clipboard.writeText(msg);
@@ -467,13 +459,11 @@
       document.body.removeChild(ta);
     }
 
-    // مسح الحقول
     document.getElementById('order-num').value = '';
     document.getElementById('phone-num').value = '';
     document.getElementById('branch').value = '';
     document.getElementById('reason').value = '';
     document.getElementById('custom-reason-txt').value = '';
-    document.getElementById('dispatcher-name').value = '';
     document.getElementById('custom-wrap').classList.remove('visible');
     document.getElementById('order-num').focus();
   };
@@ -527,19 +517,84 @@
     }
   };
 
+  function buildBranchTable(branch, entries) {
+    // كل جدول فرع: عنوان بالأحمر + 10 صفوف ثابتة (مع فراغات لو أقل)
+    const ROWS = 10;
+    let rows = '';
+    for (let i = 0; i < ROWS; i++) {
+      const e = entries[i];
+      if (e) {
+        rows += `<tr>
+          <td style="direction:ltr;font-size:9pt;">${e.phone || ''}</td>
+          <td style="font-size:9pt;color:#c00;font-weight:bold;">${e.reason}</td>
+          <td style="font-size:9pt;">${e.order}</td>
+        </tr>`;
+      } else {
+        rows += `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`;
+      }
+    }
+    return `<table dir="rtl" style="border-collapse:collapse;width:170px;font-family:Arial;">
+      <thead>
+        <tr>
+          <th style="border:1px solid #999;padding:3px 5px;font-size:8pt;color:#c00;background:#fff;text-align:center;">الرقم</th>
+          <th style="border:1px solid #999;padding:3px 5px;font-size:8pt;color:#c00;background:#fff;text-align:center;">اتجاه فرع ${branch} -</th>
+          <th style="border:1px solid #999;padding:3px 5px;font-size:8pt;color:#888;background:#fff;text-align:center;">رقم الاوردر</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>`;
+  }
+
   window.generateWordReport = function() {
     if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
     const grouped = {};
     currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch] = []; grouped[e.branch].push(e); });
-    let html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
-    <style>body{font-family:Arial;margin:20px;}h1{color:#1B52C4;text-align:center;}.branch{margin-bottom:30px;}.branch h2{background:#1B52C4;color:white;padding:8px;border-radius:5px;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{border:1px solid #ddd;padding:6px;text-align:center;}th{background:#f2f2f2;}</style>
-    </head><body><h1>📊 تقرير الإلغاءات</h1><p style="text-align:center">التاريخ: ${new Date().toLocaleDateString('ar-IQ')}</p>`;
-    for (const [branch, entries] of Object.entries(grouped)) {
-      html += `<div class="branch"><h2>🏪 ${branch} (${entries.length})</h2><table><thead><tr><th>#</th><th>رقم الأوردر</th><th>رقم الزبون</th><th>السبب</th><th>الديسباتشر</th><th>الوقت</th></tr></thead><tbody>`;
-      entries.forEach((e,i) => { html += `<tr><td>${i+1}</td><td>${e.order}</td><td dir="ltr">${e.phone||'—'}</td><td>${e.reason}</td><td>${e.dispatcher?'@'+e.dispatcher:'—'}</td><td>${e.time}</td></tr>`; });
-      html += `</tbody></table></div>`;
+
+    const branches = Object.keys(grouped);
+    // رتب الجداول بـ 4 في كل صف (مثل الصورة)
+    const COLS = 4;
+    let rows_html = '';
+    for (let i = 0; i < branches.length; i += COLS) {
+      rows_html += `<tr valign="top">`;
+      for (let j = 0; j < COLS; j++) {
+        const b = branches[i + j];
+        rows_html += `<td style="padding:8px;vertical-align:top;">`;
+        if (b) rows_html += buildBranchTable(b, grouped[b]);
+        rows_html += `</td>`;
+      }
+      rows_html += `</tr>`;
     }
-    html += `<p style="text-align:center">إجمالي الإلغاءات: ${currentEntries.length}</p></body></html>`;
+
+    const today = new Date().toLocaleDateString('ar-IQ');
+    const html = `<!DOCTYPE html>
+<html dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تقرير الإلغاءات - ${getTodayKey()}</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 15px; background: #fff; direction: rtl; }
+  h2 { text-align: center; color: #1B52C4; font-size: 14pt; margin-bottom: 4px; }
+  .sub { text-align: center; font-size: 9pt; color: #555; margin-bottom: 12px; }
+  .outer { border-collapse: collapse; width: 100%; }
+  td { border: none; }
+  table table td, table table th { border: 1px solid #bbb; padding: 3px 6px; text-align: center; }
+  .footer { text-align: center; margin-top: 14px; font-size: 10pt; color: #333; }
+</style>
+</head>
+<body>
+<h2>تقرير الإلغاءات اليومي</h2>
+<div class="sub">التاريخ: ${today} &nbsp;|&nbsp; إجمالي الإلغاءات: ${currentEntries.length}</div>
+<table class="outer">
+  ${rows_html}
+</table>
+<div class="footer">
+  ${branches.map(b => `🏪 ${b}: <b>${grouped[b].length}</b>`).join(' &nbsp;|&nbsp; ')}
+</div>
+</body>
+</html>`;
+
     const blob = new Blob([html], {type:'application/msword'});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -551,15 +606,25 @@
 
   window.copyAllToClipboard = function() {
     if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
-    let text = `📊 تقرير الإلغاءات - ${getTodayKey()}\n${'━'.repeat(38)}\n\n`;
     const grouped = {};
     currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch] = []; grouped[e.branch].push(e); });
+
+    const LINE = '─'.repeat(34);
+    let text = `📊 تقرير الإلغاءات — ${getTodayKey()}\n${LINE}\n\n`;
+
     for (const [branch, entries] of Object.entries(grouped)) {
-      text += `🏪 ${branch}\n`;
-      entries.forEach((e,i) => { text += `${i+1}. أوردر ${e.order} | ${e.reason}${e.dispatcher?' | @'+e.dispatcher:''}\n`; });
+      text += `🏪 ${branch} (${entries.length})\n`;
+      text += `${'رقم الأوردر'.padStart(10)} │ ${'السبب'.padEnd(10)} │ الرقم\n`;
+      text += `${'─'.repeat(10)}─┼─${'─'.repeat(10)}─┼─${'─'.repeat(14)}\n`;
+      entries.forEach(e => {
+        text += `${String(e.order).padStart(10)} │ ${e.reason.padEnd(10)} │ ${e.phone || '—'}\n`;
+      });
       text += '\n';
     }
-    text += `${'━'.repeat(38)}\n📦 إجمالي الإلغاءات: ${currentEntries.length}`;
+
+    text += `${LINE}\n📦 إجمالي الإلغاءات: ${currentEntries.length}\n`;
+    text += Object.entries(grouped).map(([b,es]) => `• ${b}: ${es.length}`).join('\n');
+
     navigator.clipboard.writeText(text);
     showToast('✅ تم نسخ كل الإلغاءات');
   };
