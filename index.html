@@ -172,6 +172,34 @@
     width: 100%; padding: 6px; margin: 8px 0;
     background: #0a1228; border: 1px solid #1B52C4; border-radius: 6px; color: #fff;
   }
+  /* ── Add Branch in Admin ── */
+  .admin-branch-section {
+    margin-top: 8px; padding: 8px; background: #0a1228;
+    border: 1px solid #4A9EFF33; border-radius: 6px;
+  }
+  .admin-branch-section label { color: #4A9EFF; font-size: 9px; margin-bottom: 4px; display: block; }
+  .admin-branch-row { display: flex; gap: 4px; margin-top: 4px; }
+  .admin-branch-row input {
+    flex: 1; background: #10132a; border: 1px solid #4A9EFF44;
+    border-radius: 4px; color: #fff; font-size: 10px; padding: 5px;
+    font-family: inherit; direction: rtl;
+  }
+  .admin-branch-row input:focus { outline: none; border-color: #4A9EFF88; }
+  .btn-add-branch {
+    background: #16a34a !important; border: none; border-radius: 4px;
+    color: #fff; padding: 5px 8px; cursor: pointer; font-size: 10px;
+    display: flex; align-items: center; gap: 3px; white-space: nowrap;
+  }
+  .branch-list-admin { margin-top: 6px; max-height: 80px; overflow-y: auto; }
+  .branch-tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: #1B52C422; border: 1px solid #4A9EFF33;
+    border-radius: 10px; padding: 2px 6px; margin: 2px; font-size: 8px; color: #ccc;
+  }
+  .branch-tag .del-branch {
+    background: none; border: none; color: #ef4444; cursor: pointer;
+    font-size: 9px; padding: 0 1px; line-height: 1; margin: 0;
+  }
 </style>
 </head>
 <body>
@@ -240,6 +268,7 @@
       <option>فرع الغزالية</option><option>فرع الأعظمية</option>
       <option>فرع حي العامل</option><option>فرع البوعيثة</option>
       <option>فرع حي الجهاد</option><option>فرع شهداء البياع</option>
+      <option>فرع المدائن</option>
     </select>
   </div>
 
@@ -283,6 +312,7 @@
         <option>فرع الغزالية</option><option>فرع الأعظمية</option>
         <option>فرع حي العامل</option><option>فرع البوعيثة</option>
         <option>فرع حي الجهاد</option><option>فرع شهداء البياع</option>
+        <option>فرع المدائن</option>
       </select>
     </div>
     <button class="btn-do-restore" onclick="restoreEntry()">
@@ -338,6 +368,22 @@
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="2"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14" stroke="#fff" stroke-width="2"/></svg>
         اختبار الاتصال
       </button>
+      <hr style="margin:6px 0;border-color:#4A9EFF33;">
+      <!-- إدارة الفروع -->
+      <div class="admin-branch-section">
+        <label>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#4A9EFF" stroke-width="2"/></svg>
+          إدارة الفروع
+        </label>
+        <div class="admin-branch-row">
+          <input type="text" id="newBranchInput" placeholder="اسم الفرع الجديد..." maxlength="30">
+          <button class="btn-add-branch" onclick="addBranchFromAdmin()">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+            إضافة
+          </button>
+        </div>
+        <div class="branch-list-admin" id="branchListAdmin"></div>
+      </div>
       <hr style="margin:6px 0;border-color:#4A9EFF33;">
       <button onclick="closeAdminPanel()" class="close-btn">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
@@ -518,7 +564,10 @@
     } catch(e) { showToast('فشل الاسترجاع', true); setSyncStatus('error'); }
   };
 
-  window.showAdminPanel  = () => document.getElementById('adminPanel').classList.add('show');
+  window.showAdminPanel  = () => {
+    document.getElementById('adminPanel').classList.add('show');
+    renderBranchListAdmin();
+  };
   window.closeAdminPanel = () => {
     document.getElementById('adminPanel').classList.remove('show');
     document.getElementById('adminActions').style.display = 'none';
@@ -527,19 +576,98 @@
   window.checkAdmin = () => {
     if (document.getElementById('adminPass').value === '1') {
       document.getElementById('adminActions').style.display = 'block';
+      renderBranchListAdmin();
       showToast('مرحباً أيها الأدمن');
     } else showToast('كلمة المرور غير صحيحة', true);
   };
+
+  // ── Branch Management ──
+  const DEFAULT_BRANCHES = [
+    'فرع الشعب','فرع البنوك','فرع الغدير','فرع الحرية',
+    'فرع الدورة','فرع بسماية','فرع الغزالية','فرع الأعظمية',
+    'فرع حي العامل','فرع البوعيثة','فرع حي الجهاد','فرع شهداء البياع',
+    'فرع المدائن'
+  ];
+
+  function getCustomBranches() {
+    try { return JSON.parse(localStorage.getItem('custom_branches') || '[]'); } catch { return []; }
+  }
+  function saveCustomBranches(arr) {
+    localStorage.setItem('custom_branches', JSON.stringify(arr));
+  }
+  function getAllBranches() {
+    return [...DEFAULT_BRANCHES, ...getCustomBranches()];
+  }
+
+  function rebuildBranchSelects() {
+    const branches = getAllBranches();
+    ['branch','restore-branch'].forEach(id => {
+      const sel = document.getElementById(id);
+      const cur = sel.value;
+      // keep first placeholder option
+      const placeholder = sel.options[0];
+      sel.innerHTML = '';
+      sel.appendChild(placeholder);
+      branches.forEach(b => {
+        const opt = document.createElement('option');
+        opt.textContent = b;
+        sel.appendChild(opt);
+      });
+      if (cur) sel.value = cur;
+    });
+  }
+
+  function renderBranchListAdmin() {
+    const custom = getCustomBranches();
+    const container = document.getElementById('branchListAdmin');
+    if (!container) return;
+    if (custom.length === 0) {
+      container.innerHTML = '<span style="font-size:8px;color:#666;">لا توجد فروع مضافة</span>';
+      return;
+    }
+    container.innerHTML = custom.map((b, i) =>
+      `<span class="branch-tag">${b}<button class="del-branch" onclick="deleteBranchAdmin(${i})" title="حذف">✕</button></span>`
+    ).join('');
+  }
+
+  window.addBranchFromAdmin = function() {
+    const inp = document.getElementById('newBranchInput');
+    let name = inp.value.trim();
+    if (!name) { showToast('أدخل اسم الفرع', true); return; }
+    // normalize: add فرع prefix if not present
+    if (!name.startsWith('فرع ')) name = 'فرع ' + name;
+    const all = getAllBranches();
+    if (all.includes(name)) { showToast('الفرع موجود مسبقاً', true); return; }
+    const custom = getCustomBranches();
+    custom.push(name);
+    saveCustomBranches(custom);
+    rebuildBranchSelects();
+    renderBranchListAdmin();
+    inp.value = '';
+    showToast('تم إضافة ' + name);
+  };
+
+  window.deleteBranchAdmin = function(index) {
+    const custom = getCustomBranches();
+    const name = custom[index];
+    if (confirm('حذف ' + name + '؟')) {
+      custom.splice(index, 1);
+      saveCustomBranches(custom);
+      rebuildBranchSelects();
+      renderBranchListAdmin();
+      showToast('تم حذف الفرع');
+    }
+  };
+
+  // init branch selects on load
+  document.addEventListener('DOMContentLoaded', () => rebuildBranchSelects());
+
 
   window.generateWordReport = function() {
     if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
 
     // ترتيب الفروع بنفس تسلسل القائمة
-    const BRANCH_ORDER = [
-      'فرع الشعب','فرع البنوك','فرع الغدير','فرع الحرية',
-      'فرع الدورة','فرع بسماية','فرع الغزالية','فرع الأعظمية',
-      'فرع حي العامل','فرع البوعيثة','فرع حي الجهاد','فرع شهداء البياع'
-    ];
+    const BRANCH_ORDER = getAllBranches();
 
     const grouped = {};
     currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
