@@ -581,7 +581,7 @@
     } else showToast('كلمة المرور غير صحيحة', true);
   };
 
-  // ── Branch Management ──
+  // ── Branch Management (Firebase-backed) ──
   const DEFAULT_BRANCHES = [
     'فرع الشعب','فرع البنوك','فرع الغدير','فرع الحرية',
     'فرع الدورة','فرع بسماية','فرع الغزالية','فرع الأعظمية',
@@ -589,14 +589,10 @@
     'فرع المدائن'
   ];
 
-  function getCustomBranches() {
-    try { return JSON.parse(localStorage.getItem('custom_branches') || '[]'); } catch { return []; }
-  }
-  function saveCustomBranches(arr) {
-    localStorage.setItem('custom_branches', JSON.stringify(arr));
-  }
+  let customBranches = []; // synced live from Firebase
+
   function getAllBranches() {
-    return [...DEFAULT_BRANCHES, ...getCustomBranches()];
+    return [...DEFAULT_BRANCHES, ...customBranches];
   }
 
   function rebuildBranchSelects() {
@@ -604,7 +600,6 @@
     ['branch','restore-branch'].forEach(id => {
       const sel = document.getElementById(id);
       const cur = sel.value;
-      // keep first placeholder option
       const placeholder = sel.options[0];
       sel.innerHTML = '';
       sel.appendChild(placeholder);
@@ -618,49 +613,56 @@
   }
 
   function renderBranchListAdmin() {
-    const custom = getCustomBranches();
     const container = document.getElementById('branchListAdmin');
     if (!container) return;
-    if (custom.length === 0) {
+    if (customBranches.length === 0) {
       container.innerHTML = '<span style="font-size:8px;color:#666;">لا توجد فروع مضافة</span>';
       return;
     }
-    container.innerHTML = custom.map((b, i) =>
+    container.innerHTML = customBranches.map((b, i) =>
       `<span class="branch-tag">${b}<button class="del-branch" onclick="deleteBranchAdmin(${i})" title="حذف">✕</button></span>`
     ).join('');
   }
 
-  window.addBranchFromAdmin = function() {
+  // Listen to branches in Firebase — updates all clients live
+  function listenToBranches() {
+    if (!firebaseReady) return;
+    database.ref('branches').on('value', snap => {
+      const val = snap.val();
+      customBranches = val ? Object.values(val) : [];
+      rebuildBranchSelects();
+      renderBranchListAdmin();
+    });
+  }
+
+  window.addBranchFromAdmin = async function() {
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
     const inp = document.getElementById('newBranchInput');
     let name = inp.value.trim();
     if (!name) { showToast('أدخل اسم الفرع', true); return; }
-    // normalize: add فرع prefix if not present
     if (!name.startsWith('فرع ')) name = 'فرع ' + name;
-    const all = getAllBranches();
-    if (all.includes(name)) { showToast('الفرع موجود مسبقاً', true); return; }
-    const custom = getCustomBranches();
-    custom.push(name);
-    saveCustomBranches(custom);
-    rebuildBranchSelects();
-    renderBranchListAdmin();
-    inp.value = '';
-    showToast('تم إضافة ' + name);
+    if (getAllBranches().includes(name)) { showToast('الفرع موجود مسبقاً', true); return; }
+    try {
+      await database.ref('branches').push(name);
+      inp.value = '';
+      showToast('تم إضافة ' + name);
+    } catch(e) { showToast('فشل الحفظ', true); }
   };
 
-  window.deleteBranchAdmin = function(index) {
-    const custom = getCustomBranches();
-    const name = custom[index];
-    if (confirm('حذف ' + name + '؟')) {
-      custom.splice(index, 1);
-      saveCustomBranches(custom);
-      rebuildBranchSelects();
-      renderBranchListAdmin();
+  window.deleteBranchAdmin = async function(index) {
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    const name = customBranches[index];
+    if (!confirm('حذف ' + name + '؟')) return;
+    try {
+      // find the key for this branch value
+      const snap = await database.ref('branches').once('value');
+      const val = snap.val();
+      if (!val) return;
+      const key = Object.keys(val).find(k => val[k] === name);
+      if (key) await database.ref('branches/' + key).remove();
       showToast('تم حذف الفرع');
-    }
+    } catch(e) { showToast('فشل الحذف', true); }
   };
-
-  // init branch selects on load
-  document.addEventListener('DOMContentLoaded', () => rebuildBranchSelects());
 
 
   window.generateWordReport = function() {
@@ -752,7 +754,7 @@
         database = firebase.database();
         firebaseReady = true;
         database.ref('.info/connected').on('value', snap => {
-          if (snap.val()) { setSyncStatus('synced'); loadInitialData(); listenToFirebase(); }
+          if (snap.val()) { setSyncStatus('synced'); loadInitialData(); listenToFirebase(); listenToBranches(); }
           else setSyncStatus('error', 'غير متصل');
         });
       } else { setSyncStatus('error','خطأ في التحميل'); setTimeout(initFirebase,1000); }
