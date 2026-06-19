@@ -526,7 +526,7 @@
       البحث عن أوردر ملغي
     </h3>
     <div class="search-input-row">
-      <input type="text" id="search-order-input" placeholder="رقم الأوردر..." onkeydown="if(event.key==='Enter')searchOrder()">
+      <input type="text" id="search-order-input" placeholder="رقم الأوردر..." inputmode="numeric" oninput="searchOrder()" onkeydown="if(event.key==='Enter')searchOrder()" autofocus>
       <button onclick="searchOrder()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2.2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
         بحث
@@ -1051,7 +1051,9 @@
     const q = document.getElementById('search-order-input').value.trim();
     const container = document.getElementById('searchResults');
     if (!q) { container.innerHTML = '<div class="search-empty">أدخل رقم الأوردر للبحث</div>'; return; }
-    const matches = currentEntries.filter(e => e.order === q);
+    let matches = currentEntries.filter(e => e.order.startsWith(q));
+    // الأوردرات المطابقة بالضبط تطلع أول بالنتائج
+    matches.sort((a,b) => (a.order === q ? -1 : 0) - (b.order === q ? -1 : 0));
     if (!matches.length) {
       container.innerHTML = `<div class="search-empty">لا يوجد إلغاء بهذا الرقم اليوم</div>`;
       return;
