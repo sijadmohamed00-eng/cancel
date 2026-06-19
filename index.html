@@ -72,6 +72,55 @@
   .pin-btn.active { background: #4A9EFF44; }
   .pin-btn:hover { background: #ffffff22; }
 
+  /* Search button — always visible, next to install button */
+  .search-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 3px;
+    border-radius: 3px;
+    transition: background 0.2s;
+    display: flex; align-items: center;
+  }
+  .search-btn:hover { background: #ffffff22; }
+
+  /* ── Search Panel ── */
+  .search-panel {
+    display: none; position: fixed; top:0;left:0;right:0;bottom:0;
+    background: #0a0e1aee; backdrop-filter: blur(5px); z-index: 10002; padding: 15px;
+  }
+  .search-panel.show { display: block; }
+  .search-content {
+    background: #10132a; border-radius: 12px; padding: 12px;
+    border: 1px solid #4A9EFF; max-height: 90vh; overflow-y: auto;
+  }
+  .search-content h3 { color: #4A9EFF; font-size: 12px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px; }
+  .search-input-row { display: flex; gap: 4px; margin-bottom: 8px; }
+  .search-input-row input {
+    flex: 1; background: #0a1228; border: 1px solid #4A9EFF44;
+    border-radius: 6px; color: #fff; font-size: 11px; padding: 7px;
+    font-family: inherit; direction: ltr; text-align: center;
+  }
+  .search-input-row input:focus { outline: none; border-color: #4A9EFF88; }
+  .search-input-row button {
+    background: #1B52C4; border: none; color: #fff; border-radius: 6px;
+    padding: 7px 10px; cursor: pointer; font-size: 10px;
+    display: flex; align-items: center; gap: 4px; white-space: nowrap;
+  }
+  .search-results { display: flex; flex-direction: column; gap: 6px; max-height: 55vh; overflow-y: auto; }
+  .search-result-item {
+    background: #0a1228; border: 1px solid #4A9EFF33; border-radius: 8px;
+    padding: 8px; font-size: 10px; color: #ddd;
+  }
+  .search-result-item .sr-row { display: flex; justify-content: space-between; margin: 2px 0; }
+  .search-result-item .sr-label { color: #4A9EFF; }
+  .search-result-item .sr-order { font-size: 12px; color: #fff; font-weight: bold; margin-bottom: 4px; }
+  .search-empty { text-align: center; color: #666; font-size: 9px; padding: 10px; }
+  .search-close-row { margin-top: 8px; }
+
   /* ── Body ── */
   .body { padding: 6px; display: flex; flex-direction: column; gap: 4px; }
   label { font-size: 9px; color: #4A9EFF; display: flex; align-items: center; gap: 3px; margin-bottom: 1px; }
@@ -260,6 +309,13 @@
     <span class="header-title">تسجيل إلغاء</span>
   </div>
   <div class="header-btns">
+    <!-- Search button — always visible -->
+    <button class="search-btn" id="search-btn" onclick="showSearchPanel()" title="بحث عن أوردر">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2.2"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </button>
     <!-- Install button (shows when PWA installable) -->
     <button class="btn-install" id="btn-install" onclick="installPWA()">
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
@@ -462,6 +518,32 @@
   </div>
 </div>
 
+<!-- ══ Search Panel ══ -->
+<div id="searchPanel" class="search-panel">
+  <div class="search-content">
+    <h3>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4A9EFF" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/></svg>
+      البحث عن أوردر ملغي
+    </h3>
+    <div class="search-input-row">
+      <input type="text" id="search-order-input" placeholder="رقم الأوردر..." onkeydown="if(event.key==='Enter')searchOrder()">
+      <button onclick="searchOrder()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2.2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        بحث
+      </button>
+    </div>
+    <div class="search-results" id="searchResults">
+      <div class="search-empty">أدخل رقم الأوردر للبحث</div>
+    </div>
+    <div class="search-close-row">
+      <button onclick="closeSearchPanel()" class="close-btn" style="width:100%;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        إغلاق
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
@@ -525,12 +607,13 @@
     sessionStorage.setItem('current_cancel_entries', JSON.stringify(currentEntries));
   }
 
-  function showToast(msg, isError = false) {
+  function showToast(msg, isError = false, duration = 2200) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.toggle('error', isError);
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2200);
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(() => t.classList.remove('show'), duration);
   }
 
   function setSyncStatus(status, msg = '') {
@@ -634,6 +717,13 @@
     if (!branch) { showToast('الفرع مطلوب', true); return; }
     if (!reason) { showToast('السبب مطلوب', true); return; }
     if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+
+    // منع تكرار إلغاء نفس الأوردر بنفس الفرع (نفس الأوردر بفرع مختلف مسموح)
+    const dup = currentEntries.find(e => e.order === order && e.branch === branch);
+    if (dup) {
+      showToast(`⚠️ هذا الأوردر ملغي مسبقاً في ${branch} الساعة ${dup.time}`, true, 4000);
+      return;
+    }
 
     const now = new Date();
     const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
@@ -944,6 +1034,36 @@
       showToast('تم حذف الأرشفة');
       renderArchiveList();
     } catch(e) { showToast('فشل الحذف', true); }
+  };
+
+  // ── Search ──
+  window.showSearchPanel = function() {
+    document.getElementById('searchPanel').classList.add('show');
+    document.getElementById('search-order-input').value = '';
+    document.getElementById('searchResults').innerHTML = '<div class="search-empty">أدخل رقم الأوردر للبحث</div>';
+    setTimeout(() => document.getElementById('search-order-input').focus(), 50);
+  };
+  window.closeSearchPanel = function() {
+    document.getElementById('searchPanel').classList.remove('show');
+  };
+
+  window.searchOrder = function() {
+    const q = document.getElementById('search-order-input').value.trim();
+    const container = document.getElementById('searchResults');
+    if (!q) { container.innerHTML = '<div class="search-empty">أدخل رقم الأوردر للبحث</div>'; return; }
+    const matches = currentEntries.filter(e => e.order === q);
+    if (!matches.length) {
+      container.innerHTML = `<div class="search-empty">لا يوجد إلغاء بهذا الرقم اليوم</div>`;
+      return;
+    }
+    container.innerHTML = matches.map(e => `
+      <div class="search-result-item">
+        <div class="sr-order">📦 أوردر #${e.order}</div>
+        <div class="sr-row"><span class="sr-label">الفرع:</span><span>${e.branch}</span></div>
+        <div class="sr-row"><span class="sr-label">السبب:</span><span>${e.reason}</span></div>
+        <div class="sr-row"><span class="sr-label">الوقت:</span><span>${e.time}</span></div>
+      </div>
+    `).join('');
   };
 
   function initFirebase() {
