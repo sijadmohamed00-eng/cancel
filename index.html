@@ -117,7 +117,7 @@
   }
   .search-result-item .sr-row { display: flex; justify-content: space-between; margin: 2px 0; }
   .search-result-item .sr-label { color: #4A9EFF; }
-  .search-result-item .sr-order { font-size: 12px; color: #fff; font-weight: bold; margin-bottom: 4px; }
+  .search-result-item .sr-order { font-size: 12px; color: #fff; font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
   .search-empty { text-align: center; color: #666; font-size: 9px; padding: 10px; }
   .search-close-row { margin-top: 8px; }
 
@@ -181,7 +181,9 @@
     background: #16a34a; font-size: 9px; text-align: center;
     padding: 4px; border-radius: 5px; opacity: 0;
     transition: opacity 0.3s; pointer-events: none; z-index: 9999;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
   }
+  .toast svg { flex-shrink: 0; }
   .toast.show { opacity: 1; }
   .toast.error { background: #dc2626; }
 
@@ -247,8 +249,10 @@
   }
   .branch-tag .del-branch {
     background: none; border: none; color: #ef4444; cursor: pointer;
-    font-size: 9px; padding: 0 1px; line-height: 1; margin: 0;
+    padding: 0 1px; line-height: 1; margin: 0;
+    display: inline-flex; align-items: center; justify-content: center;
   }
+  .branch-tag .del-branch svg { display: block; }
 
   /* ── End Day / Archive ── */
   .btn-end-day {
@@ -607,9 +611,23 @@
     sessionStorage.setItem('current_cancel_entries', JSON.stringify(currentEntries));
   }
 
-  function showToast(msg, isError = false, duration = 2200) {
+  // أيقونات SVG بسيطة تُستخدم بدل الإيموجي بكل أنحاء الواجهة
+  const ICONS = {
+    warning: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    box:     '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    success: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="#fff" stroke-width="2" stroke-linecap="round"/><polyline points="22 4 12 14.01 9 11.01" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    error:   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="2"/><line x1="8" y1="8" x2="16" y2="16" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="8" x2="8" y2="16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+    close:   '<svg width="9" height="9" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/></svg>'
+  };
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showToast(msg, isError = false, duration = 2200, icon = null) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
+    const iconSvg = ICONS[icon] || '';
+    t.innerHTML = iconSvg + `<span>${escapeHtml(msg)}</span>`;
     t.classList.toggle('error', isError);
     t.classList.add('show');
     clearTimeout(t._hideTimer);
@@ -721,7 +739,7 @@
     // منع تكرار إلغاء نفس الأوردر بنفس الفرع (نفس الأوردر بفرع مختلف مسموح)
     const dup = currentEntries.find(e => e.order === order && e.branch === branch);
     if (dup) {
-      showToast(`⚠️ هذا الأوردر ملغي مسبقاً في ${branch} الساعة ${dup.time}`, true, 4000);
+      showToast(`هذا الأوردر ملغي مسبقاً في ${branch} الساعة ${dup.time}`, true, 4000, 'warning');
       return;
     }
 
@@ -738,7 +756,7 @@
     updateCounter(); setSyncStatus('synced');
     showToast(`تم حفظ ${order}`);
 
-    const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}`;
+    const msg = `سبب الالغاء: ${reason}\nرقم الأوردر: ${order}\nالفرع: ${branch}`;
     try { await navigator.clipboard.writeText(msg); }
     catch(e) { const ta=document.createElement('textarea'); ta.value=msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
 
@@ -822,7 +840,7 @@
       return;
     }
     container.innerHTML = customBranches.map((b, i) =>
-      `<span class="branch-tag">${b}<button class="del-branch" onclick="deleteBranchAdmin(${i})" title="حذف">✕</button></span>`
+      `<span class="branch-tag">${escapeHtml(b)}<button class="del-branch" onclick="deleteBranchAdmin(${i})" title="حذف">${ICONS.close}</button></span>`
     ).join('');
   }
 
@@ -1060,10 +1078,10 @@
     }
     container.innerHTML = matches.map(e => `
       <div class="search-result-item">
-        <div class="sr-order">📦 أوردر #${e.order}</div>
-        <div class="sr-row"><span class="sr-label">الفرع:</span><span>${e.branch}</span></div>
-        <div class="sr-row"><span class="sr-label">السبب:</span><span>${e.reason}</span></div>
-        <div class="sr-row"><span class="sr-label">الوقت:</span><span>${e.time}</span></div>
+        <div class="sr-order">${ICONS.box}<span>أوردر #${escapeHtml(e.order)}</span></div>
+        <div class="sr-row"><span class="sr-label">الفرع:</span><span>${escapeHtml(e.branch)}</span></div>
+        <div class="sr-row"><span class="sr-label">السبب:</span><span>${escapeHtml(e.reason)}</span></div>
+        <div class="sr-row"><span class="sr-label">الوقت:</span><span>${escapeHtml(e.time)}</span></div>
       </div>
     `).join('');
   };
