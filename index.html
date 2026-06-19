@@ -200,6 +200,48 @@
     background: none; border: none; color: #ef4444; cursor: pointer;
     font-size: 9px; padding: 0 1px; line-height: 1; margin: 0;
   }
+
+  /* ── End Day / Archive ── */
+  .btn-end-day {
+    width: 100%; background: #7c3aed !important; color: #fff; border: none;
+    border-radius: 6px; padding: 6px; font-size: 10px; font-weight: bold;
+    cursor: pointer; margin: 3px 0; display: flex; align-items: center;
+    justify-content: center; gap: 5px;
+  }
+  .btn-archive {
+    width: 100%; background: #0891b2 !important; color: #fff; border: none;
+    border-radius: 6px; padding: 6px; font-size: 10px; font-weight: bold;
+    cursor: pointer; margin: 3px 0; display: flex; align-items: center;
+    justify-content: center; gap: 5px;
+  }
+  .archive-panel {
+    display: none; position: fixed; top:0;left:0;right:0;bottom:0;
+    background: #0a0e1aee; backdrop-filter: blur(5px); z-index: 10001; padding: 15px;
+  }
+  .archive-panel.show { display: block; }
+  .archive-content {
+    background: #10132a; border-radius: 12px; padding: 12px;
+    border: 1px solid #0891b2; max-height: 90vh; overflow-y: auto;
+  }
+  .archive-content h3 { color: #4A9EFF; font-size: 12px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px; }
+  .archive-list { display: flex; flex-direction: column; gap: 5px; max-height: 60vh; overflow-y: auto; }
+  .archive-item {
+    background: #0a1228; border: 1px solid #4A9EFF33; border-radius: 6px;
+    padding: 6px 8px; display: flex; align-items: center; justify-content: space-between;
+    gap: 6px;
+  }
+  .archive-item-info { font-size: 9px; color: #ccc; }
+  .archive-item-info b { color: #4A9EFF; font-size: 10px; }
+  .archive-item-actions { display: flex; gap: 3px; }
+  .archive-item-actions button {
+    background: #1B52C4; border: none; color: #fff; border-radius: 4px;
+    padding: 4px 6px; font-size: 8px; cursor: pointer; margin: 0;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .archive-item-actions button.danger { background: #dc2626; }
+  .archive-empty { text-align: center; color: #666; font-size: 9px; padding: 10px; }
+  .archive-close-row { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -364,6 +406,14 @@
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M10 11v6M14 11v6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" stroke="#fff" stroke-width="2"/></svg>
         حذف الكل
       </button>
+      <button class="btn-end-day" onclick="endDay()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="2"/></svg>
+        إنهاء اليوم وأرشفة
+      </button>
+      <button class="btn-archive" onclick="showArchivePanel()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="#fff" stroke-width="2"/><path d="M5 8v11a2 2 0 002 2h10a2 2 0 002-2V8" stroke="#fff" stroke-width="2"/><line x1="10" y1="13" x2="14" y2="13" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        الأرشيف (الأيام السابقة)
+      </button>
       <button onclick="testFirebase()" style="background:#f59e0b;">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="2"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14" stroke="#fff" stroke-width="2"/></svg>
         اختبار الاتصال
@@ -393,6 +443,25 @@
   </div>
 </div>
 
+<!-- ══ Archive Panel ══ -->
+<div id="archivePanel" class="archive-panel">
+  <div class="archive-content">
+    <h3>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="#4A9EFF" stroke-width="2"/><path d="M5 8v11a2 2 0 002 2h10a2 2 0 002-2V8" stroke="#4A9EFF" stroke-width="2"/></svg>
+      أرشيف الأيام السابقة
+    </h3>
+    <div class="archive-list" id="archiveList">
+      <div class="archive-empty">جاري التحميل...</div>
+    </div>
+    <div class="archive-close-row">
+      <button onclick="closeArchivePanel()" class="close-btn" style="width:100%;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        إغلاق
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
@@ -403,6 +472,7 @@
 
   let database = null, currentEntries = [], firebaseReady = false, isPinned = false;
   let deferredInstallPrompt = null;
+  let currentSession = null; // { key, startDate } — the active (open) day session
 
   // ── PWA Install ──
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -428,9 +498,26 @@
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 
-  function getTodayKey() {
-    const d = new Date();
+  function dateKeyFor(d) {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function getTodayKey() {
+    return dateKeyFor(new Date());
+  }
+
+  // The Firebase path key for the currently OPEN session.
+  // Falls back to today's date until a session is created (lazily,
+  // on the first saved entry).
+  function getSessionKey() {
+    return currentSession ? currentSession.key : getTodayKey();
+  }
+
+  // Human-readable date the report should show: the date of the FIRST
+  // cancellation in the open session — not necessarily "today".
+  function getSessionDisplayDate() {
+    if (currentSession && currentSession.startDate) return currentSession.startDate;
+    return new Date().toLocaleDateString('ar-IQ');
   }
 
   function updateCounter() {
@@ -485,10 +572,30 @@
     } catch(e) { showToast('فشل: ' + e.message, true); setSyncStatus('error'); }
   };
 
+  // Ensures a session document exists in Firebase before the first
+  // entry of the day is saved. The session's startDate is fixed at
+  // creation time and does not change even if entries are added after
+  // midnight — that's what keeps the report dated by the FIRST
+  // cancellation, not by calendar day.
+  async function ensureSession() {
+    if (currentSession) return currentSession;
+    const snap = await database.ref('session/current').once('value');
+    if (snap.exists()) {
+      currentSession = snap.val();
+      return currentSession;
+    }
+    const now = new Date();
+    const session = { key: dateKeyFor(now), startDate: now.toLocaleDateString('ar-IQ'), startedAt: now.getTime() };
+    await database.ref('session/current').set(session);
+    currentSession = session;
+    return session;
+  }
+
   async function saveToFirebase(entry) {
     if (!firebaseReady) return false;
     try {
-      await database.ref(`cancellations/${getTodayKey()}/${entry.id}`).set(entry);
+      await ensureSession();
+      await database.ref(`cancellations/${getSessionKey()}/${entry.id}`).set(entry);
       return true;
     } catch(e) { showToast('خطأ: ' + e.message, true); return false; }
   }
@@ -496,19 +603,24 @@
   async function loadFromFirebase() {
     if (!firebaseReady) return [];
     try {
-      const s = await database.ref(`cancellations/${getTodayKey()}`).once('value');
+      const s = await database.ref(`cancellations/${getSessionKey()}`).once('value');
       return s.exists() ? Object.values(s.val()) : [];
     } catch(e) { return []; }
   }
 
   function listenToFirebase() {
     if (!firebaseReady) return;
-    database.ref(`cancellations/${getTodayKey()}`).on('value', (s) => {
-      if (s.exists()) {
-        const c = Object.values(s.val()).sort((a,b) => a.id - b.id);
-        if (JSON.stringify(c) !== JSON.stringify(currentEntries)) { currentEntries = c; updateCounter(); setSyncStatus('synced'); }
-      } else { currentEntries = []; updateCounter(); }
-    }, () => setSyncStatus('error'));
+    database.ref('session/current').on('value', (sessSnap) => {
+      currentSession = sessSnap.exists() ? sessSnap.val() : null;
+      const key = getSessionKey();
+      database.ref(`cancellations/${key}`).off();
+      database.ref(`cancellations/${key}`).on('value', (s) => {
+        if (s.exists()) {
+          const c = Object.values(s.val()).sort((a,b) => a.id - b.id);
+          if (JSON.stringify(c) !== JSON.stringify(currentEntries)) { currentEntries = c; updateCounter(); setSyncStatus('synced'); }
+        } else { currentEntries = []; updateCounter(); }
+      }, () => setSyncStatus('error'));
+    });
   }
 
   window.sendEntry = async function() {
@@ -555,7 +667,7 @@
     const match = currentEntries.find(e => e.order === orderNum && e.branch === branch);
     if (!match) { showToast(`لم يُعثر على ${orderNum} في ${branch}`, true); setSyncStatus('synced'); return; }
     try {
-      await database.ref(`cancellations/${getTodayKey()}/${match.id}`).remove();
+      await database.ref(`cancellations/${getSessionKey()}/${match.id}`).remove();
       currentEntries = currentEntries.filter(e => e.id !== match.id);
       updateCounter(); setSyncStatus('synced');
       showToast(`تم استرجاع أوردر ${orderNum}`);
@@ -665,27 +777,24 @@
   };
 
 
-  window.generateWordReport = function() {
-    if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
-
-    // ترتيب الفروع بنفس تسلسل القائمة
+  // Builds the report HTML for a given set of entries + display date.
+  // Used both for the live (current session) report and for exporting
+  // an archived day from the archive panel.
+  function buildReportHtml(entries, displayDate) {
     const BRANCH_ORDER = getAllBranches();
-
     const grouped = {};
-    currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
+    entries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
 
-    // رتب الفروع حسب التسلسل، والفروع غير الموجودة في القائمة تجي في الآخر
     const sortedBranches = BRANCH_ORDER.filter(b => grouped[b])
       .concat(Object.keys(grouped).filter(b => !BRANCH_ORDER.includes(b)));
 
-    const today = new Date().toLocaleDateString('ar-IQ');
     const TH = 'border:2px solid #333;padding:5px 10px;color:#cc0000;text-align:center;font-size:11pt;background:#fff;';
     const TD = 'border:1.5px solid #555;padding:5px 10px;text-align:center;font-size:11pt;';
 
     let tablesHtml = '';
     for (const branch of sortedBranches) {
-      const entries = grouped[branch];
-      let rows = entries.map(e => `<tr>
+      const branchEntries = grouped[branch];
+      let rows = branchEntries.map(e => `<tr>
         <td style="${TD}">${e.order}</td>
         <td style="${TD}">${e.reason}</td>
         <td style="${TD}font-weight:bold;direction:ltr;">${e.phone||''}</td>
@@ -701,22 +810,32 @@
           <tbody>${rows}</tbody>
         </table></div>`;
     }
-    const html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
+    return `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
     <style>body{font-family:Arial;margin:25px 30px;direction:rtl;}h2{text-align:center;color:#1B52C4;font-size:15pt;}
     .sub{text-align:center;font-size:10pt;color:#444;margin-bottom:20px;}
     td{border:1.5px solid #333;padding:5px 8px;text-align:center;}
     .footer{text-align:center;margin-top:18px;font-size:10pt;color:#333;border-top:1px solid #ccc;padding-top:10px;}</style>
     </head><body>
     <h2>تقرير الإلغاءات اليومي</h2>
-    <div class="sub">التاريخ: ${today} | إجمالي الإلغاءات: ${currentEntries.length}</div>
+    <div class="sub">التاريخ: ${displayDate} | إجمالي الإلغاءات: ${entries.length}</div>
     ${tablesHtml}
-    <div class="footer">${Object.entries(grouped).map(([b,es])=>`${b}: <b>${es.length}</b>`).join(' | ')} | المجموع: <b>${currentEntries.length}</b></div>
+    <div class="footer">${Object.entries(grouped).map(([b,es])=>`${b}: <b>${es.length}</b>`).join(' | ')} | المجموع: <b>${entries.length}</b></div>
     </body></html>`;
+  }
+
+  function downloadDocBlob(html, filename) {
     const blob = new Blob([html],{type:'application/msword'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `تقرير_الالغاءات_${getTodayKey()}.doc`;
+    a.download = filename;
     a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  window.generateWordReport = function() {
+    if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
+    const displayDate = getSessionDisplayDate();
+    const html = buildReportHtml(currentEntries, displayDate);
+    downloadDocBlob(html, `تقرير_الالغاءات_${getSessionKey()}.doc`);
     showToast('تم تصدير التقرير');
   };
 
@@ -725,7 +844,7 @@
     const grouped = {};
     currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
     const LINE = '─'.repeat(34);
-    let text = `تقرير الإلغاءات — ${getTodayKey()}\n${LINE}\n\n`;
+    let text = `تقرير الإلغاءات — ${getSessionDisplayDate()}\n${LINE}\n\n`;
     for (const [branch, entries] of Object.entries(grouped)) {
       text += `${branch} (${entries.length})\n`;
       text += `${'رقم الأوردر'.padStart(10)} │ ${'السبب'.padEnd(10)} │ الرقم\n`;
@@ -741,10 +860,90 @@
 
   window.clearAllData = function() {
     if (confirm('هل أنت متأكد من حذف كل بيانات اليوم؟')) {
-      database.ref(`cancellations/${getTodayKey()}`).remove()
+      database.ref(`cancellations/${getSessionKey()}`).remove()
         .then(() => { currentEntries=[]; updateCounter(); showToast('تم حذف كل البيانات'); })
         .catch(() => showToast('فشل الحذف', true));
     }
+  };
+
+  // ── End Day / Archive ──
+  // Archives the currently open session under archive/{key}, then
+  // clears the live cancellations path and the session pointer so the
+  // NEXT saved entry starts a brand-new session (new startDate).
+  window.endDay = async function() {
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    if (!currentEntries.length) { showToast('لا توجد بيانات لإنهاء اليوم', true); return; }
+    if (!confirm(`إنهاء اليوم وأرشفة ${currentEntries.length} إلغاء بتاريخ ${getSessionDisplayDate()}؟`)) return;
+    try {
+      const key = getSessionKey();
+      const displayDate = getSessionDisplayDate();
+      await database.ref(`archive/${key}`).set({
+        key, displayDate,
+        closedAt: Date.now(),
+        entries: currentEntries
+      });
+      await database.ref(`cancellations/${key}`).remove();
+      await database.ref('session/current').remove();
+      currentSession = null;
+      currentEntries = [];
+      updateCounter();
+      showToast('تم أرشفة اليوم بنجاح');
+    } catch(e) { showToast('فشل الأرشفة: ' + e.message, true); }
+  };
+
+  // ── Archive Browser ──
+  window.showArchivePanel = async function() {
+    document.getElementById('archivePanel').classList.add('show');
+    await renderArchiveList();
+  };
+  window.closeArchivePanel = function() {
+    document.getElementById('archivePanel').classList.remove('show');
+  };
+
+  async function renderArchiveList() {
+    const container = document.getElementById('archiveList');
+    container.innerHTML = '<div class="archive-empty">جاري التحميل...</div>';
+    if (!firebaseReady) { container.innerHTML = '<div class="archive-empty">Firebase غير جاهز</div>'; return; }
+    try {
+      const snap = await database.ref('archive').once('value');
+      if (!snap.exists()) { container.innerHTML = '<div class="archive-empty">لا توجد أرشفات سابقة</div>'; return; }
+      const days = Object.values(snap.val()).sort((a,b) => b.closedAt - a.closedAt);
+      container.innerHTML = days.map(day => `
+        <div class="archive-item">
+          <div class="archive-item-info"><b>${day.displayDate}</b><br>عدد الإلغاءات: ${day.entries ? day.entries.length : 0}</div>
+          <div class="archive-item-actions">
+            <button onclick="exportArchiveDay('${day.key}')">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#fff" stroke-width="2"/></svg>
+              Word
+            </button>
+            <button class="danger" onclick="deleteArchiveDay('${day.key}')">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+              حذف
+            </button>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) { container.innerHTML = '<div class="archive-empty">فشل تحميل الأرشيف</div>'; }
+  }
+
+  window.exportArchiveDay = async function(key) {
+    try {
+      const snap = await database.ref(`archive/${key}`).once('value');
+      if (!snap.exists()) { showToast('لم يُعثر على الأرشفة', true); return; }
+      const day = snap.val();
+      const html = buildReportHtml(day.entries || [], day.displayDate);
+      downloadDocBlob(html, `تقرير_الالغاءات_${key}.doc`);
+      showToast('تم تصدير التقرير');
+    } catch(e) { showToast('فشل التصدير', true); }
+  };
+
+  window.deleteArchiveDay = async function(key) {
+    if (!confirm('حذف هذه الأرشفة نهائياً؟')) return;
+    try {
+      await database.ref(`archive/${key}`).remove();
+      showToast('تم حذف الأرشفة');
+      renderArchiveList();
+    } catch(e) { showToast('فشل الحذف', true); }
   };
 
   function initFirebase() {
@@ -762,6 +961,10 @@
   }
 
   async function loadInitialData() {
+    try {
+      const snap = await database.ref('session/current').once('value');
+      currentSession = snap.exists() ? snap.val() : null;
+    } catch(e) { currentSession = null; }
     const data = await loadFromFirebase();
     if (data.length) { currentEntries = data.sort((a,b)=>a.id-b.id); updateCounter(); }
   }
