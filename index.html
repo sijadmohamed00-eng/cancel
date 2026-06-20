@@ -665,7 +665,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.0.7';
+  const APP_VERSION = '1.0.8';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -932,6 +932,25 @@
       timeEn,
       date: getTodayKey(), createdAt: now.getTime() };
 
+    // ننسخ للحافظة فوراً (قبل أي await) — لأن متصفحات الموبايل ترفض
+    // طلب النسخ إذا صار بعد تأخير شبكة. هذا يضمن النسخ يرتبط مباشرة
+    // برد فعل ضغطة المستخدم.
+    const msg = `🏪 الفرع: ${branch}\n📦 رقم الأوردر: ${order}\n🚫 سبب الالغاء: ${reason}\n⏰ الوقت: ${timeEn}`;
+    let copied = false;
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = msg;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      copied = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch(e) { copied = false; }
+    if (!copied && navigator.clipboard) {
+      navigator.clipboard.writeText(msg).then(() => { copied = true; }).catch(() => {});
+    }
+
     setSyncStatus('syncing');
     if (!await saveToFirebase(entry)) { setSyncStatus('error'); return; }
 
@@ -939,24 +958,7 @@
     currentEntries.sort((a,b) => a.id - b.id);
     updateCounter(); setSyncStatus('synced');
 
-    const msg = `🏪 الفرع: ${branch}\n📦 رقم الأوردر: ${order}\n🚫 سبب الالغاء: ${reason}\n⏰ الوقت: ${timeEn}`;
-    let copied = false;
-    try {
-      await navigator.clipboard.writeText(msg);
-      copied = true;
-    } catch(e) {
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = msg;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.focus(); ta.select();
-        copied = document.execCommand('copy');
-        document.body.removeChild(ta);
-      } catch(e2) { copied = false; }
-    }
-    showToast(copied ? `تم حفظ ${order} ونسخ الرسالة` : `تم حفظ ${order} لكن فشل النسخ — انسخها يدوياً`, !copied, copied ? 2200 : 4000);
+    showToast(`تم حفظ ${order} ونسخ الرسالة`);
 
     ['order-num','phone-num','branch','reason','custom-reason-txt'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('custom-wrap').classList.remove('visible');
