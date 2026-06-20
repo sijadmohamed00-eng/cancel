@@ -177,6 +177,16 @@
     display: flex; align-items: center; justify-content: center; gap: 4px;
   }
 
+  .app-version-tag {
+    text-align: center;
+    color: #ffffffaa;
+    font-size: 7px;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+    margin-top: 3px;
+    direction: ltr;
+  }
+
   .counter { text-align: center; font-size: 9px; color: #4A9EFF99; padding: 2px 0; }
 
   .sync-status { text-align: center; font-size: 8px; cursor: pointer; padding: 2px 0;
@@ -478,6 +488,7 @@
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="#f59e0b" stroke-width="1.8" stroke-linejoin="round"/></svg>
     لوحة الأدمن
   </button>
+  <div class="app-version-tag" id="app-version-tag"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -639,7 +650,14 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.0.4';
+  const APP_VERSION = '1.0.6';
+
+  // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
+  // الجهاز محدث أم لسا شغّال بنسخة قديمة.
+  document.addEventListener('DOMContentLoaded', () => {
+    const tag = document.getElementById('app-version-tag');
+    if (tag) tag.textContent = `الإصدار ${APP_VERSION}`;
+  });
 
   // ══ App Version / Force-Update System ══
   // عند نشر نسخة جديدة من النظام: زيد رقم النسخة بالأعلى، ثم سجل دخول
@@ -892,7 +910,7 @@
     const now = new Date();
     let h12 = now.getHours() % 12;
     if (h12 === 0) h12 = 12;
-    const ampm = now.getHours() < 12 ? 'صباحاً' : 'مساءاً';
+    const ampm = now.getHours() < 12 ? 'ص' : 'م';
     const timeEn = String(h12).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0') + ' ' + ampm;
     const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
       time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
@@ -906,7 +924,7 @@
     currentEntries.sort((a,b) => a.id - b.id);
     updateCounter(); setSyncStatus('synced');
 
-    const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}\n⏰ الوقت: ${timeEn}`;
+    const msg = `🏪 الفرع: ${branch}\n📦 رقم الأوردر: ${order}\n🚫 سبب الالغاء: ${reason}\n⏰ الوقت: ${timeEn}`;
     let copied = false;
     try {
       await navigator.clipboard.writeText(msg);
