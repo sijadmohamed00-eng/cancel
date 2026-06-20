@@ -607,7 +607,7 @@
   // عند نشر نسخة جديدة من النظام: زيد رقم النسخة هنا، ثم سجل دخول كأدمن
   // واضغط زر "نشر تحديث جديد" — كل من فاتح النظام بنسخة قديمة
   // بيوصله طلب تحديث فوري ولازم يحدث الصفحة قبل ما يكمل استخدام النظام.
-  const APP_VERSION = '1.0.1';
+  const APP_VERSION = '1.0.2';
 
   function listenToAppVersion() {
     if (!firebaseReady) return;
@@ -629,8 +629,14 @@
         const keys = await caches.keys();
         await Promise.all(keys.map(k => caches.delete(k)));
       }
-    } catch(e) { /* ignore — still force reload below */ }
-    location.reload(true);
+    } catch(e) { /* ignore — still navigate below */ }
+    // location.reload() لوحدها ما تكفي على سفاري/آيفون لأن المتصفح
+    // ممكن يرجع يجيب نفس النسخة المخزنة. الحل المضمون هو نروح لرابط
+    // فيه معامل جديد (?v=...) يفرض على المتصفح يطلب نسخة شبكة جديدة
+    // 100% بدون أي كاش.
+    const url = new URL(location.href);
+    url.searchParams.set('v', Date.now());
+    location.replace(url.toString());
   };
 
   // للأدمن فقط: ينشر رقم النسخة الحالية كـ "آخر نسخة" فيخلي كل الأجهزة
