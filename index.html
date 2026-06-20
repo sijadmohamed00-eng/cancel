@@ -1,4 +1,13 @@
 <!DOCTYPE html>
+<!--
+  ⚠️ تنبيه مهم لأي شخص يعدّل هذا الملف:
+  أي تعديل بهذا الكود، حتى لو حرف واحد، يجب أن يصاحبه رفع رقم
+  APP_VERSION الموجود داخل <script> (بحث عن "APP_VERSION ="،
+  بالقرب من بداية كود الجافاسكربت). بدون رفع الرقم، الأجهزة
+  الأخرى ما رح تنطلب تحديث وتبقى شغّالة بنسخة قديمة.
+  بعد رفع الرقم: رفع الملف على الاستضافة، ثم تسجيل دخول كأدمن
+  بالنظام والضغط على زر "نشر تحديث جديد".
+-->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -612,11 +621,30 @@
   let deferredInstallPrompt = null;
   let currentSession = null; // { key, startDate } — the active (open) day session
 
+  // ══════════════════════════════════════════════════════════════════
+  // ⚠️⚠️⚠️ تنبيه لأي مبرمج/مطور يعدّل هذا الملف ⚠️⚠️⚠️
+  // ──────────────────────────────────────────────────────────────────
+  // أي تعديل بهذا الملف — حتى لو حرف واحد أو فاصلة — يجب أن يصاحبه
+  // رفع رقم APP_VERSION أدناه (مثلاً من '1.0.3' إلى '1.0.4').
+  //
+  // السبب: النظام يعتمد على هذا الرقم لمعرفة هل عند المستخدم نسخة
+  // قديمة محفوظة بالكاش أو الـ Service Worker. إذا عدّلت الكود وما
+  // رفعت الرقم، الأجهزة المفتوحة بنسخة قديمة ما رح تنطلب تحديث
+  // ورح تستمر تشتغل بكود قديم/معطّل بدون أي تنبيه — وهذا يسبب أخطاء
+  // صعب تشخيصها لأن الكود "يبدو" محدث بس فعلياً المستخدم شغّال
+  // بنسخة غير اللي تتوقعها.
+  //
+  // الخطوات الصحيحة بعد أي تعديل:
+  //   1. زيد رقم APP_VERSION بالسطر تحت مباشرة.
+  //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
+  //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
+  // ══════════════════════════════════════════════════════════════════
+  const APP_VERSION = '1.0.4';
+
   // ══ App Version / Force-Update System ══
-  // عند نشر نسخة جديدة من النظام: زيد رقم النسخة هنا، ثم سجل دخول كأدمن
-  // واضغط زر "نشر تحديث جديد" — كل من فاتح النظام بنسخة قديمة
+  // عند نشر نسخة جديدة من النظام: زيد رقم النسخة بالأعلى، ثم سجل دخول
+  // كأدمن واضغط زر "نشر تحديث جديد" — كل من فاتح النظام بنسخة قديمة
   // بيوصله طلب تحديث فوري ولازم يحدث الصفحة قبل ما يكمل استخدام النظام.
-  const APP_VERSION = '1.0.3';
 
   function listenToAppVersion() {
     if (!firebaseReady) return;
@@ -877,11 +905,25 @@
     currentEntries.push(entry);
     currentEntries.sort((a,b) => a.id - b.id);
     updateCounter(); setSyncStatus('synced');
-    showToast(`تم حفظ ${order}`);
 
     const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}\n⏰ الوقت: ${timeEn}`;
-    try { await navigator.clipboard.writeText(msg); }
-    catch(e) { const ta=document.createElement('textarea'); ta.value=msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(msg);
+      copied = true;
+    } catch(e) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = msg;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch(e2) { copied = false; }
+    }
+    showToast(copied ? `تم حفظ ${order} ونسخ الرسالة` : `تم حفظ ${order} لكن فشل النسخ — انسخها يدوياً`, !copied, copied ? 2200 : 4000);
 
     ['order-num','phone-num','branch','reason','custom-reason-txt'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('custom-wrap').classList.remove('visible');
