@@ -667,7 +667,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.1.1';
+  const APP_VERSION = '1.1.2';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -1133,38 +1133,23 @@
         <td colspan="3" style="${BRANCH_ROW}">الغاء ${branch} ـ (${branchEntries.length})</td>
       </tr>`;
       rowsHtml += branchEntries.map(e => `<tr>
-        <td style="${TD}font-weight:bold;direction:ltr;">${e.phone||''}</td>
-        <td style="${TD}">${e.reason}</td>
         <td style="${TD}">${e.order}</td>
+        <td style="${TD}">${e.reason}</td>
+        <td style="${TD}font-weight:bold;direction:ltr;">${e.phone||''}</td>
       </tr>`).join('');
     }
 
     return `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
     <style>
       body{font-family:Arial;margin:25px 30px;direction:rtl;}
-      .letterhead{width:100%;border-collapse:collapse;margin-bottom:8px;page-break-inside:avoid;}
-      .letterhead td{border:none;padding:0;vertical-align:middle;}
-      .lh-logo-cell{width:80px;text-align:center;}
-      .lh-logo{width:60px;height:60px;border-radius:10px;background:#0e2a4a;display:inline-block;}
-      .lh-name-cell{width:55%;text-align:right;padding-right:12px;}
-      .lh-name{font-size:13pt;font-weight:bold;color:#16324f;line-height:1.6;}
-      .lh-date-cell{width:30%;text-align:left;}
-      .lh-date{font-size:15pt;font-weight:bold;color:#16324f;direction:ltr;display:inline-block;}
-      .lh-rule{border-top:2px solid #16324f;margin:6px 0 18px 0;}
+      .sub{text-align:center;font-size:13pt;font-weight:bold;color:#16324f;margin-bottom:14px;}
       .main-table{width:100%;border-collapse:collapse;font-family:Arial;table-layout:fixed;}
       .footer{margin-top:18px;border-top:1px solid #ccc;padding-top:10px;}
       .footer table{width:100%;border-collapse:collapse;}
       .footer td{border:none;padding:2px 6px;text-align:center;font-size:10pt;color:#333;}
     </style>
     </head><body>
-    <table class="letterhead" dir="rtl">
-      <tr>
-        <td class="lh-logo-cell"><span class="lh-logo"></span></td>
-        <td class="lh-name-cell"><span class="lh-name">شركة عصر الشرق<br>لادارة المطاعم<br>قسم خدمة العملاء</span></td>
-        <td class="lh-date-cell"><span class="lh-date">${displayDate}</span></td>
-      </tr>
-    </table>
-    <div class="lh-rule"></div>
+    <div class="sub">التاريخ: ${displayDate} | إجمالي الإلغاءات: ${entries.length}</div>
     <table dir="rtl" class="main-table">
       <colgroup><col style="width:25%;"><col style="width:35%;"><col style="width:40%;"></colgroup>
       <thead><tr>
