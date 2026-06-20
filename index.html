@@ -163,6 +163,7 @@
     display: flex; align-items: center; justify-content: center; gap: 5px;
   }
   .btn-send:hover { filter: brightness(1.1); }
+  .btn-send:disabled { opacity: 0.6; cursor: not-allowed; filter: none; }
 
   .btn-admin {
     width: 100%;
@@ -646,6 +647,7 @@
   let database = null, currentEntries = [], firebaseReady = false, isPinned = false;
   let deferredInstallPrompt = null;
   let currentSession = null; // { key, startDate } — the active (open) day session
+  let isSaving = false; // قفل يمنع تنفيذ sendEntry مرتين بالتوازي عند الضغط المزدوج/السريع
 
   // ══════════════════════════════════════════════════════════════════
   // ⚠️⚠️⚠️ تنبيه لأي مبرمج/مطور يعدّل هذا الملف ⚠️⚠️⚠️
@@ -665,7 +667,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.0.8';
+  const APP_VERSION = '1.1.1';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -904,65 +906,86 @@
   }
 
   window.sendEntry = async function() {
-    const order  = document.getElementById('order-num').value.trim();
-    const phone  = document.getElementById('phone-num').value.trim();
-    const branch = document.getElementById('branch').value;
-    let reason   = document.getElementById('reason').value;
-    if (reason === 'مخصص') reason = document.getElementById('custom-reason-txt').value.trim();
+    // حماية ضد الضغط المزدوج/السريع — لو العملية شغالة لسا، تجاهل أي
+    // استدعاء جديد بدل ما يصير تسجيل مكرر بالتوازي.
+    if (isSaving) return;
+    isSaving = true;
+    const sendBtn = document.querySelector('.btn-send');
+    if (sendBtn) sendBtn.disabled = true;
 
-    if (!order)  { showToast('رقم الأوردر مطلوب', true); return; }
-    if (!branch) { showToast('الفرع مطلوب', true); return; }
-    if (!reason) { showToast('السبب مطلوب', true); return; }
-    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
-
-    // منع تكرار إلغاء نفس الأوردر بنفس الفرع (نفس الأوردر بفرع مختلف مسموح)
-    const dup = currentEntries.find(e => e.order === order && e.branch === branch);
-    if (dup) {
-      showToast(`هذا الأوردر ملغي مسبقاً في ${branch} الساعة ${dup.timeEn || dup.time}`, true, 4000, 'warning');
-      return;
-    }
-
-    const now = new Date();
-    let h12 = now.getHours() % 12;
-    if (h12 === 0) h12 = 12;
-    const ampm = now.getHours() < 12 ? 'ص' : 'م';
-    const timeEn = String(h12).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0') + ' ' + ampm;
-    const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
-      time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
-      timeEn,
-      date: getTodayKey(), createdAt: now.getTime() };
-
-    // ننسخ للحافظة فوراً (قبل أي await) — لأن متصفحات الموبايل ترفض
-    // طلب النسخ إذا صار بعد تأخير شبكة. هذا يضمن النسخ يرتبط مباشرة
-    // برد فعل ضغطة المستخدم.
-    const msg = `🏪 الفرع: ${branch}\n📦 رقم الأوردر: ${order}\n🚫 سبب الالغاء: ${reason}\n⏰ الوقت: ${timeEn}`;
-    let copied = false;
     try {
-      const ta = document.createElement('textarea');
-      ta.value = msg;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.focus(); ta.select();
-      copied = document.execCommand('copy');
-      document.body.removeChild(ta);
-    } catch(e) { copied = false; }
-    if (!copied && navigator.clipboard) {
-      navigator.clipboard.writeText(msg).then(() => { copied = true; }).catch(() => {});
+      const order  = document.getElementById('order-num').value.trim();
+      const phone  = document.getElementById('phone-num').value.trim();
+      const branch = document.getElementById('branch').value;
+      let reason   = document.getElementById('reason').value;
+      if (reason === 'مخصص') reason = document.getElementById('custom-reason-txt').value.trim();
+
+      if (!order)  { showToast('رقم الأوردر مطلوب', true); return; }
+      if (!branch) { showToast('الفرع مطلوب', true); return; }
+      if (!reason) { showToast('السبب مطلوب', true); return; }
+      if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+
+      // منع تكرار إلغاء نفس الأوردر بنفس الفرع (نفس الأوردر بفرع مختلف مسموح)
+      const dup = currentEntries.find(e => e.order === order && e.branch === branch);
+      if (dup) {
+        showToast(`هذا الأوردر ملغي مسبقاً في ${branch} الساعة ${dup.timeEn || dup.time}`, true, 4000, 'warning');
+        return;
+      }
+
+      const now = new Date();
+      let h12 = now.getHours() % 12;
+      if (h12 === 0) h12 = 12;
+      const ampm = now.getHours() < 12 ? 'ص' : 'م';
+      const timeEn = String(h12).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0') + ' ' + ampm;
+      const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
+        time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
+        timeEn,
+        date: getTodayKey(), createdAt: now.getTime() };
+
+      // نضيفه فوراً لـ currentEntries المحلي قبل الحفظ بفايربيس — هذا
+      // يضمن إنه أي ضغطة تالية (حتى لو القفل تجاوزها بالغلط) تلقى
+      // التكرار بفحص dup أعلاه فوراً بدون انتظار رد الشبكة.
+      currentEntries.push(entry);
+      currentEntries.sort((a,b) => a.id - b.id);
+
+      // ننسخ للحافظة فوراً (قبل أي await) — لأن متصفحات الموبايل ترفض
+      // طلب النسخ إذا صار بعد تأخير شبكة. هذا يضمن النسخ يرتبط مباشرة
+      // برد فعل ضغطة المستخدم.
+      const msg = `🏪 الفرع: ${branch}\n📦 رقم الأوردر: ${order}\n🚫 سبب الالغاء: ${reason}\n⏰ الوقت: ${timeEn}`;
+      let copied = false;
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = msg;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch(e) { copied = false; }
+      if (!copied && navigator.clipboard) {
+        navigator.clipboard.writeText(msg).then(() => { copied = true; }).catch(() => {});
+      }
+
+      setSyncStatus('syncing');
+      if (!await saveToFirebase(entry)) {
+        // فشل الحفظ بفايربيس — نرجع نشيله من القائمة المحلية حتى ما
+        // يبقى ظاهر محلياً وهو غير محفوظ فعلياً بالسيرفر.
+        currentEntries = currentEntries.filter(e => e.id !== entry.id);
+        setSyncStatus('error');
+        return;
+      }
+
+      updateCounter(); setSyncStatus('synced');
+      showToast(`تم حفظ ${order} ونسخ الرسالة`);
+
+      ['order-num','phone-num','branch','reason','custom-reason-txt'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('custom-wrap').classList.remove('visible');
+      document.getElementById('order-num').focus();
+    } finally {
+      isSaving = false;
+      if (sendBtn) sendBtn.disabled = false;
     }
-
-    setSyncStatus('syncing');
-    if (!await saveToFirebase(entry)) { setSyncStatus('error'); return; }
-
-    currentEntries.push(entry);
-    currentEntries.sort((a,b) => a.id - b.id);
-    updateCounter(); setSyncStatus('synced');
-
-    showToast(`تم حفظ ${order} ونسخ الرسالة`);
-
-    ['order-num','phone-num','branch','reason','custom-reason-txt'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('custom-wrap').classList.remove('visible');
-    document.getElementById('order-num').focus();
   };
 
   window.restoreEntry = async function() {
@@ -1098,36 +1121,63 @@
 
     const TH = 'border:2px solid #333;padding:5px 10px;color:#cc0000;text-align:center;font-size:11pt;background:#fff;';
     const TD = 'border:1.5px solid #555;padding:5px 10px;text-align:center;font-size:11pt;';
+    const BRANCH_ROW = 'border:2px solid #333;padding:6px 10px;text-align:center;font-size:11pt;font-weight:bold;color:#cc0000;background:#f3f3f3;';
 
-    let tablesHtml = '';
+    // جدول واحد متصل لكل التقرير: صف عنوان فرع (يمتد عبر 3 أعمدة) ثم
+    // صفوف إلغاءات ذلك الفرع، وهكذا لكل فرع — بدون أي جدول منفصل.
+    // هذا يضمن إنه ينسخ كوحدة واحدة متصلة لإكسل بدون تبعثر.
+    let rowsHtml = '';
     for (const branch of sortedBranches) {
       const branchEntries = grouped[branch];
-      let rows = branchEntries.map(e => `<tr>
-        <td style="${TD}">${e.order}</td>
-        <td style="${TD}">${e.reason}</td>
+      rowsHtml += `<tr>
+        <td colspan="3" style="${BRANCH_ROW}">الغاء ${branch} ـ (${branchEntries.length})</td>
+      </tr>`;
+      rowsHtml += branchEntries.map(e => `<tr>
         <td style="${TD}font-weight:bold;direction:ltr;">${e.phone||''}</td>
+        <td style="${TD}">${e.reason}</td>
+        <td style="${TD}">${e.order}</td>
       </tr>`).join('');
-      tablesHtml += `<div style="margin-bottom:20px;">
-        <table dir="rtl" style="width:100%;border-collapse:collapse;font-family:Arial;table-layout:fixed;">
-          <colgroup><col style="width:40%;"><col style="width:35%;"><col style="width:25%;"></colgroup>
-          <thead><tr>
-            <th style="${TH}">رقم الاوردر</th>
-            <th style="${TH}">الغاء ${branch} ـ</th>
-            <th style="${TH}">رقم الزبون</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table></div>`;
     }
+
     return `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
-    <style>body{font-family:Arial;margin:25px 30px;direction:rtl;}h2{text-align:center;color:#1B52C4;font-size:15pt;}
-    .sub{text-align:center;font-size:10pt;color:#444;margin-bottom:20px;}
-    td{border:1.5px solid #333;padding:5px 8px;text-align:center;}
-    .footer{text-align:center;margin-top:18px;font-size:10pt;color:#333;border-top:1px solid #ccc;padding-top:10px;}</style>
+    <style>
+      body{font-family:Arial;margin:25px 30px;direction:rtl;}
+      .letterhead{width:100%;border-collapse:collapse;margin-bottom:8px;page-break-inside:avoid;}
+      .letterhead td{border:none;padding:0;vertical-align:middle;}
+      .lh-logo-cell{width:80px;text-align:center;}
+      .lh-logo{width:60px;height:60px;border-radius:10px;background:#0e2a4a;display:inline-block;}
+      .lh-name-cell{width:55%;text-align:right;padding-right:12px;}
+      .lh-name{font-size:13pt;font-weight:bold;color:#16324f;line-height:1.6;}
+      .lh-date-cell{width:30%;text-align:left;}
+      .lh-date{font-size:15pt;font-weight:bold;color:#16324f;direction:ltr;display:inline-block;}
+      .lh-rule{border-top:2px solid #16324f;margin:6px 0 18px 0;}
+      .main-table{width:100%;border-collapse:collapse;font-family:Arial;table-layout:fixed;}
+      .footer{margin-top:18px;border-top:1px solid #ccc;padding-top:10px;}
+      .footer table{width:100%;border-collapse:collapse;}
+      .footer td{border:none;padding:2px 6px;text-align:center;font-size:10pt;color:#333;}
+    </style>
     </head><body>
-    <h2>تقرير الإلغاءات اليومي</h2>
-    <div class="sub">التاريخ: ${displayDate} | إجمالي الإلغاءات: ${entries.length}</div>
-    ${tablesHtml}
-    <div class="footer">${Object.entries(grouped).map(([b,es])=>`${b}: <b>${es.length}</b>`).join(' | ')} | المجموع: <b>${entries.length}</b></div>
+    <table class="letterhead" dir="rtl">
+      <tr>
+        <td class="lh-logo-cell"><span class="lh-logo"></span></td>
+        <td class="lh-name-cell"><span class="lh-name">شركة عصر الشرق<br>لادارة المطاعم<br>قسم خدمة العملاء</span></td>
+        <td class="lh-date-cell"><span class="lh-date">${displayDate}</span></td>
+      </tr>
+    </table>
+    <div class="lh-rule"></div>
+    <table dir="rtl" class="main-table">
+      <colgroup><col style="width:25%;"><col style="width:35%;"><col style="width:40%;"></colgroup>
+      <thead><tr>
+        <th style="${TH}">رقم الزبون</th>
+        <th style="${TH}">السبب</th>
+        <th style="${TH}">رقم الاوردر</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="footer"><table dir="rtl"><tr>
+      ${Object.entries(grouped).map(([b,es])=>`<td>${b}: <b>${es.length}</b></td>`).join('')}
+      <td>المجموع: <b>${entries.length}</b></td>
+    </tr></table></div>
     </body></html>`;
   }
 
