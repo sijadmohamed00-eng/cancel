@@ -667,7 +667,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.1.3';
+  const APP_VERSION = '1.1.4';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -1133,9 +1133,9 @@
         <td colspan="3" style="${BRANCH_ROW}">الغاء ${branch} ـ (${branchEntries.length})</td>
       </tr>`;
       rowsHtml += branchEntries.map(e => `<tr>
-        <td style="${TD}font-weight:bold;direction:ltr;">${e.phone||''}</td>
-        <td style="${TD}">${e.reason}</td>
         <td style="${TD}">${e.order}</td>
+        <td style="${TD}">${e.reason}</td>
+        <td style="${TD}font-weight:bold;direction:ltr;">${e.phone||''}</td>
       </tr>`).join('');
     }
 
@@ -1153,9 +1153,9 @@
     <table dir="rtl" class="main-table">
       <colgroup><col style="width:25%;"><col style="width:35%;"><col style="width:40%;"></colgroup>
       <thead><tr>
-        <th style="${TH}">رقم الزبون</th>
-        <th style="${TH}">السبب</th>
         <th style="${TH}">رقم الاوردر</th>
+        <th style="${TH}">السبب</th>
+        <th style="${TH}">رقم الزبون</th>
       </tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
