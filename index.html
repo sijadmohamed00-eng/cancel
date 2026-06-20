@@ -862,7 +862,10 @@
     }
 
     const now = new Date();
-    const timeEn = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+    let h12 = now.getHours() % 12;
+    if (h12 === 0) h12 = 12;
+    const ampm = now.getHours() < 12 ? 'صباحاً' : 'مساءاً';
+    const timeEn = String(h12).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0') + ' ' + ampm;
     const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
       time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
       timeEn,
