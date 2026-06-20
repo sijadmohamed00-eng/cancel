@@ -430,13 +430,13 @@
     </label>
     <select id="branch">
       <option value="">— اختر الفرع —</option>
-      <option> الشعب</option><option> البنوك</option>
-      <option> الغدير</option><option> الحرية</option>
-      <option> الدورة</option><option> بسماية</option>
-      <option> الغزالية</option><option> الأعظمية</option>
-      <option> حي العامل</option><option> البوعيثة</option>
-      <option> حي الجهاد</option><option> شهداء البياع</option>
-      <option> المدائن</option>
+      <option value="فرع الشعب">الشعب - Shaab</option><option value="فرع البنوك">البنوك - Bnook</option>
+      <option value="فرع الغدير">الغدير - Ghader</option><option value="فرع الحرية">الحرية - Alhurya</option>
+      <option value="فرع الدورة">الدورة - Dora</option><option value="فرع بسماية">بسماية - Basmaya</option>
+      <option value="فرع الغزالية">الغزالية - Ghazaliyya</option><option value="فرع الأعظمية">الأعظمية - Adhamiya</option>
+      <option value="فرع حي العامل">حي العامل - Hay-alamel</option><option value="فرع البوعيثة">البوعيثة - Baeaytha</option>
+      <option value="فرع حي الجهاد">حي الجهاد - Hay-jihad</option><option value="فرع شهداء البياع">شهداء البياع - Bayae</option>
+      <option value="فرع المدائن">المدائن - Madayin</option>
     </select>
   </div>
 
@@ -474,13 +474,13 @@
       <input type="text" id="restore-order" placeholder="رقم الأوردر">
       <select id="restore-branch">
         <option value="">الفرع</option>
-        <option> الشعب</option><option> البنوك</option>
-        <option> الغدير</option><option> الحرية</option>
-        <option> الدورة</option><option> بسماية</option>
-        <option> الغزالية</option><option> الأعظمية</option>
-        <option> حي العامل</option><option> البوعيثة</option>
-        <option> حي الجهاد</option><option> شهداء البياع</option>
-        <option> المدائن</option>
+        <option value="فرع الشعب">الشعب - Shaab</option><option value="فرع البنوك">البنوك - Bnook</option>
+        <option value="فرع الغدير">الغدير - Ghader</option><option value="فرع الحرية">الحرية - Alhurya</option>
+        <option value="فرع الدورة">الدورة - Dora</option><option value="فرع بسماية">بسماية - Basmaya</option>
+        <option value="فرع الغزالية">الغزالية - Ghazaliyya</option><option value="فرع الأعظمية">الأعظمية - Adhamiya</option>
+        <option value="فرع حي العامل">حي العامل - Hay-alamel</option><option value="فرع البوعيثة">البوعيثة - Baeaytha</option>
+        <option value="فرع حي الجهاد">حي الجهاد - Hay-jihad</option><option value="فرع شهداء البياع">شهداء البياع - Bayae</option>
+        <option value="فرع المدائن">المدائن - Madayin</option>
       </select>
     </div>
     <button class="btn-do-restore" onclick="restoreEntry()">
@@ -667,7 +667,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.1.4';
+  const APP_VERSION = '1.2.1';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -1038,6 +1038,26 @@
     return [...DEFAULT_BRANCHES, ...customBranches];
   }
 
+  // أسماء عرض ثنائية اللغة للفروع الافتراضية: المفتاح هو القيمة
+  // الحقيقية المخزّنة (فرع الشعب...) والقيمة هي النص المعروض بالقائمة
+  // (الشعب - Shaab). هذا يضمن إن المخزون بفايربيس والتقرير يبقوا
+  // بالاسم العربي الأصلي بكلمة "فرع"، بينما القائمة تعرض شكل مختصر.
+  const BRANCH_DISPLAY_LABELS = {
+    'فرع الشعب': 'الشعب - Shaab',
+    'فرع البنوك': 'البنوك - Bnook',
+    'فرع الغدير': 'الغدير - Ghader',
+    'فرع الحرية': 'الحرية - Alhurya',
+    'فرع الدورة': 'الدورة - Dora',
+    'فرع بسماية': 'بسماية - Basmaya',
+    'فرع الغزالية': 'الغزالية - Ghazaliyya',
+    'فرع الأعظمية': 'الأعظمية - Adhamiya',
+    'فرع حي العامل': 'حي العامل - Hay-alamel',
+    'فرع البوعيثة': 'البوعيثة - Baeaytha',
+    'فرع حي الجهاد': 'حي الجهاد - Hay-jihad',
+    'فرع شهداء البياع': 'شهداء البياع - Bayae',
+    'فرع المدائن': 'المدائن - Madayin'
+  };
+
   function rebuildBranchSelects() {
     const branches = getAllBranches();
     ['branch','restore-branch'].forEach(id => {
@@ -1048,7 +1068,8 @@
       sel.appendChild(placeholder);
       branches.forEach(b => {
         const opt = document.createElement('option');
-        opt.textContent = b;
+        opt.value = b;
+        opt.textContent = BRANCH_DISPLAY_LABELS[b] || b;
         sel.appendChild(opt);
       });
       if (cur) sel.value = cur;
@@ -1083,7 +1104,6 @@
     const inp = document.getElementById('newBranchInput');
     let name = inp.value.trim();
     if (!name) { showToast('أدخل اسم الفرع', true); return; }
-    if (!name.startsWith('فرع ')) name = 'فرع ' + name;
     if (getAllBranches().includes(name)) { showToast('الفرع موجود مسبقاً', true); return; }
     try {
       await database.ref('branches').push(name);
