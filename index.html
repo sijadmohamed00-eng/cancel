@@ -312,6 +312,12 @@
   .update-box {
     background: #10132a; border: 1.5px solid #4A9EFF; border-radius: 14px;
     padding: 22px 18px; text-align: center; max-width: 280px;
+    position: relative;
+  }
+  .update-dismiss {
+    position: absolute; top: 8px; left: 8px;
+    background: none; border: none; cursor: pointer;
+    padding: 4px; line-height: 1; display: flex;
   }
   .update-box svg { margin-bottom: 10px; }
   .update-box h3 { color: #fff; font-size: 13px; margin-bottom: 6px; }
@@ -581,6 +587,9 @@
 <!-- ══ Force Update Overlay ══ -->
 <div id="updateOverlay" class="update-overlay">
   <div class="update-box">
+    <button class="update-dismiss" onclick="dismissUpdateOverlay()" title="تجاوز مؤقت">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#888" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#888" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M21.5 2v6h-6M2.5 22v-6h6" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11.5a10 10 0 0118-6M22 12.5a10 10 0 01-18 6" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <h3>يوجد تحديث جديد للنظام</h3>
     <p>تم إصدار نسخة جديدة من النظام. يرجى تحديث الصفحة الآن للاستمرار باستخدام التطبيق بشكل صحيح.</p>
@@ -607,17 +616,26 @@
   // عند نشر نسخة جديدة من النظام: زيد رقم النسخة هنا، ثم سجل دخول كأدمن
   // واضغط زر "نشر تحديث جديد" — كل من فاتح النظام بنسخة قديمة
   // بيوصله طلب تحديث فوري ولازم يحدث الصفحة قبل ما يكمل استخدام النظام.
-  const APP_VERSION = '1.0.2';
+  const APP_VERSION = '1.0.3';
 
   function listenToAppVersion() {
     if (!firebaseReady) return;
     database.ref('appVersion/latest').on('value', (snap) => {
       const latest = snap.exists() ? snap.val() : null;
-      if (latest && latest !== APP_VERSION) {
+      // إذا تم تجاوز التنبيه بهذي الجلسة (زر ✕) ما نرجع نطلعه من جديد،
+      // حتى يقدر الأدمن يدخل ويرفع نسخة جديدة بدون ما يعلق بحلقة تحديث.
+      if (latest && latest !== APP_VERSION && sessionStorage.getItem('update_dismissed') !== latest) {
         document.getElementById('updateOverlay').classList.add('show');
       }
     });
   }
+
+  window.dismissUpdateOverlay = function() {
+    database.ref('appVersion/latest').once('value').then(snap => {
+      if (snap.exists()) sessionStorage.setItem('update_dismissed', snap.val());
+    }).catch(() => {});
+    document.getElementById('updateOverlay').classList.remove('show');
+  };
 
   window.forceUpdateNow = async function() {
     try {
