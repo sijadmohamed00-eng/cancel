@@ -607,7 +607,7 @@
   // عند نشر نسخة جديدة من النظام: زيد رقم النسخة هنا، ثم سجل دخول كأدمن
   // واضغط زر "نشر تحديث جديد" — كل من فاتح النظام بنسخة قديمة
   // بيوصله طلب تحديث فوري ولازم يحدث الصفحة قبل ما يكمل استخدام النظام.
-  const APP_VERSION = '1.0.0';
+  const APP_VERSION = '1.0.1';
 
   function listenToAppVersion() {
     if (!firebaseReady) return;
@@ -634,13 +634,14 @@
   };
 
   // للأدمن فقط: ينشر رقم النسخة الحالية كـ "آخر نسخة" فيخلي كل الأجهزة
-  // المفتوحة بنسخة أقدم تطلب التحديث فوراً.
+  // المفتوحة بنسخة أقدم تطلب التحديث فوراً. ملاحظة: جهازك أنت نفسه ما
+  // راح يطلب تحديث لأنه أساساً فاتح بآخر نسخة (نفس APP_VERSION).
   window.publishUpdate = async function() {
     if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
-    if (!confirm(`نشر النسخة ${APP_VERSION} كآخر تحديث؟ كل الأجهزة بنسخة أقدم رح تنطلب تحديث فوري.`)) return;
+    if (!confirm(`نشر النسخة ${APP_VERSION} كآخر تحديث؟\n\nملاحظة: جهازك الحالي ما راح يطلع له تنبيه لأنه أصلاً فاتح بهذي النسخة.\nفقط الأجهزة الفاتحة نسخة أقدم رح تنطلب تحديث.`)) return;
     try {
       await database.ref('appVersion/latest').set(APP_VERSION);
-      showToast('تم نشر التحديث لجميع الأجهزة');
+      showToast(`تم نشر الإصدار ${APP_VERSION} لجميع الأجهزة`, false, 3500, 'success');
     } catch(e) { showToast('فشل النشر: ' + e.message, true); }
   };
 
