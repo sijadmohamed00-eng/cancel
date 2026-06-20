@@ -187,6 +187,17 @@
     direction: ltr;
   }
 
+  .app-credit {
+    text-align: center;
+    color: #ffffff77;
+    font-size: 7px;
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-top: 2px;
+    margin-bottom: 4px;
+    direction: ltr;
+  }
+
   .counter { text-align: center; font-size: 9px; color: #4A9EFF99; padding: 2px 0; }
 
   .sync-status { text-align: center; font-size: 8px; cursor: pointer; padding: 2px 0;
@@ -334,10 +345,13 @@
     position: relative;
   }
   .update-dismiss {
-    position: absolute; top: 8px; left: 8px;
-    background: none; border: none; cursor: pointer;
-    padding: 4px; line-height: 1; display: flex;
+    position: absolute !important; top: 6px; left: 6px;
+    width: auto !important; background: transparent !important; border: none !important;
+    cursor: pointer; padding: 3px !important; line-height: 1;
+    display: flex !important; align-items: center; justify-content: center;
+    border-radius: 50% !important; margin: 0 !important;
   }
+  .update-dismiss:hover { background: #ffffff1a !important; }
   .update-box svg { margin-bottom: 10px; }
   .update-box h3 { color: #fff; font-size: 13px; margin-bottom: 6px; }
   .update-box p { color: #aaa; font-size: 10px; margin-bottom: 14px; line-height: 1.6; }
@@ -489,6 +503,7 @@
     لوحة الأدمن
   </button>
   <div class="app-version-tag" id="app-version-tag"></div>
+  <div class="app-credit">SAJAD MOHAMMED</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -650,7 +665,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.0.6';
+  const APP_VERSION = '1.0.7';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
