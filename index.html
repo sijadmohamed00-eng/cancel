@@ -852,7 +852,7 @@
     updateCounter(); setSyncStatus('synced');
     showToast(`تم حفظ ${order}`);
 
-    const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}`;
+    const msg = `🚫 سبب الالغاء: ${reason}\n📦 رقم الأوردر: ${order}\n🏪 الفرع: ${branch}\n⏰ الوقت: ${timeEn}`;
     try { await navigator.clipboard.writeText(msg); }
     catch(e) { const ta=document.createElement('textarea'); ta.value=msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
 
