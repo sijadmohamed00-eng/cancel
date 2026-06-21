@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<!--
+  ⚠️ تنبيه مهم لأي شخص يعدّل هذا الملف:
+  أي تعديل بهذا الكود، حتى لو حرف واحد، يجب أن يصاحبه رفع رقم
+  APP_VERSION الموجود داخل <script> (بحث عن "APP_VERSION ="،
+  بالقرب من بداية كود الجافاسكربت). بدون رفع الرقم، الأجهزة
+  الأخرى ما رح تنطلب تحديث وتبقى شغّالة بنسخة قديمة.
+  بعد رفع الرقم: رفع الملف على الاستضافة، ثم تسجيل دخول كأدمن
+  بالنظام والضغط على زر "نشر تحديث جديد".
+-->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الإلغاءات</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B52C4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="إلغاءات">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #10132a;
+    color: #eee;
+    width: 204px;
+    height: auto;
+    overflow: hidden;
+    user-select: none;
+  }
+  input, textarea, select { user-select: text; -webkit-user-select: text; }
+
+  /* ── SVG icon helper ── */
+  .ic { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ic svg { display: block; }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1B52C4, #0d3a8a);
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: move;
+    gap: 6px;
+  }
+  .header-left { display: flex; align-items: center; gap: 5px; }
+  .header-title { font-size: 10px; font-weight: 700; color: #fff; }
+  .header-btns { display: flex; gap: 4px; align-items: center; }
+
+  /* Install button */
+  .btn-install {
+    display: none;
+    background: #4A9EFF22;
+    border: 1px solid #4A9EFF66;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 8px;
+    font-weight: 600;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-install:hover { background: #4A9EFF44; }
+  .btn-install.visible { display: flex; }
+
+  .pin-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 3px;
+    border-radius: 3px;
+    transition: background 0.2s;
+    display: flex; align-items: center;
+  }
+  .pin-btn.active { background: #4A9EFF44; }
+  .pin-btn:hover { background: #ffffff22; }
+
+  /* Search button — always visible, next to install button */
+  .search-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 3px;
+    border-radius: 3px;
+    transition: background 0.2s;
+    display: flex; align-items: center;
+  }
+  .search-btn:hover { background: #ffffff22; }
+
+  /* ── Search Panel ── */
+  .search-panel {
+    display: none; position: fixed; top:0;left:0;right:0;bottom:0;
+    background: #0a0e1aee; backdrop-filter: blur(5px); z-index: 10002; padding: 15px;
+  }
+  .search-panel.show { display: block; }
+  .search-content {
+    background: #10132a; border-radius: 12px; padding: 12px;
+    border: 1px solid #4A9EFF; max-height: 90vh; overflow-y: auto;
+  }
+  .search-content h3 { color: #4A9EFF; font-size: 12px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px; }
+  .search-input-row { display: flex; gap: 4px; margin-bottom: 8px; }
+  .search-input-row input {
+    flex: 1; background: #0a1228; border: 1px solid #4A9EFF44;
+    border-radius: 6px; color: #fff; font-size: 11px; padding: 7px;
+    font-family: inherit; direction: ltr; text-align: center;
+  }
+  .search-input-row input:focus { outline: none; border-color: #4A9EFF88; }
+  .search-input-row button {
+    background: #1B52C4; border: none; color: #fff; border-radius: 6px;
+    padding: 7px 10px; cursor: pointer; font-size: 10px;
+    display: flex; align-items: center; gap: 4px; white-space: nowrap;
+  }
+  .search-results { display: flex; flex-direction: column; gap: 6px; max-height: 55vh; overflow-y: auto; }
+  .search-result-item {
+    background: #0a1228; border: 1px solid #4A9EFF33; border-radius: 8px;
+    padding: 8px; font-size: 10px; color: #ddd;
+  }
+  .search-result-item .sr-row { display: flex; justify-content: space-between; margin: 2px 0; }
+  .search-result-item .sr-label { color: #4A9EFF; }
+  .search-result-item .sr-order { font-size: 12px; color: #fff; font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+  .search-empty { text-align: center; color: #666; font-size: 9px; padding: 10px; }
+  .search-close-row { margin-top: 8px; }
+
+  /* ── Body ── */
+  .body { padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+  label { font-size: 9px; color: #4A9EFF; display: flex; align-items: center; gap: 3px; margin-bottom: 1px; }
+  input, select {
+    width: 100%;
+    background: #0a1228;
+    border: 1px solid #1B52C444;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 10px;
+    padding: 4px;
+    font-family: inherit;
+    direction: rtl;
+  }
+  input:focus, select:focus { outline: none; border-color: #4A9EFF88; }
+  .custom-reason { display: none; margin-top: 3px; }
+  .custom-reason.visible { display: block; }
+
+  /* ── Buttons ── */
+  .btn-send {
+    width: 100%;
+    background: linear-gradient(135deg, #1B52C4, #4A9EFF);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 6px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 3px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .btn-send:hover { filter: brightness(1.1); }
+  .btn-send:disabled { opacity: 0.6; cursor: not-allowed; filter: none; }
+
+  .btn-admin {
+    width: 100%;
+    background: transparent;
+    color: #f59e0b;
+    border: 1px solid #f59e0b55;
+    border-radius: 5px;
+    padding: 4px;
+    font-size: 9px;
+    cursor: pointer;
+    margin-top: 3px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+
+  .app-version-tag {
+    text-align: center;
+    color: #ffffffaa;
+    font-size: 7px;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+    margin-top: 3px;
+    direction: ltr;
+  }
+
+  .app-credit {
+    text-align: center;
+    color: #ffffff77;
+    font-size: 7px;
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-top: 2px;
+    margin-bottom: 4px;
+    direction: ltr;
+  }
+
+  .counter { text-align: center; font-size: 9px; color: #4A9EFF99; padding: 2px 0; }
+
+  .sync-status { text-align: center; font-size: 8px; cursor: pointer; padding: 2px 0;
+    display: flex; align-items: center; justify-content: center; gap: 3px; }
+  .sync-status.synced { color: #16a34a; }
+  .sync-status.error  { color: #ef4444; }
+  .sync-status.syncing{ color: #f59e0b; }
+
+  .toast {
+    position: fixed; bottom: 5px; left: 4px; right: 4px;
+    background: #16a34a; font-size: 9px; text-align: center;
+    padding: 4px; border-radius: 5px; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none; z-index: 9999;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .toast svg { flex-shrink: 0; }
+  .toast.show { opacity: 1; }
+  .toast.error { background: #dc2626; }
+
+  hr { margin: 3px 0; border: none; border-top: 1px solid #1B52C422; }
+
+  /* ── Restore ── */
+  .restore-section {
+    background: #0a1a0e; border: 1px solid #22c55e33;
+    border-radius: 6px; padding: 6px; margin-top: 2px;
+  }
+  .restore-section label { color: #22c55e; }
+  .restore-row { display: flex; gap: 4px; margin-top: 4px; }
+  .restore-row input, .restore-row select { flex: 1; }
+  .btn-do-restore {
+    width: 100%; background: #22c55e; color: #fff; border: none;
+    border-radius: 5px; padding: 5px; font-size: 9px; font-weight: bold;
+    cursor: pointer; margin-top: 4px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+
+  /* ── Admin Panel ── */
+  .admin-panel {
+    display: none; position: fixed; top:0;left:0;right:0;bottom:0;
+    background: #0a0e1aee; backdrop-filter: blur(5px); z-index: 10000; padding: 15px;
+  }
+  .admin-panel.show { display: block; }
+  .admin-content { background: #10132a; border-radius: 12px; padding: 15px; border: 1px solid #4A9EFF; }
+  .admin-content h3 { margin-bottom: 10px; color: #4A9EFF; font-size: 13px;
+    display: flex; align-items: center; gap: 6px; }
+  .admin-content button {
+    background: #1B52C4; color: #fff; border: none; border-radius: 6px;
+    padding: 6px 10px; margin: 3px; cursor: pointer; font-size: 11px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .admin-content .close-btn { background: #dc2626; }
+  .admin-password {
+    width: 100%; padding: 6px; margin: 8px 0;
+    background: #0a1228; border: 1px solid #1B52C4; border-radius: 6px; color: #fff;
+  }
+  /* ── Add Branch in Admin ── */
+  .admin-branch-section {
+    margin-top: 8px; padding: 8px; background: #0a1228;
+    border: 1px solid #4A9EFF33; border-radius: 6px;
+  }
+  .admin-branch-section label { color: #4A9EFF; font-size: 9px; margin-bottom: 4px; display: block; }
+  .admin-branch-row { display: flex; gap: 4px; margin-top: 4px; }
+  .admin-branch-row input {
+    flex: 1; background: #10132a; border: 1px solid #4A9EFF44;
+    border-radius: 4px; color: #fff; font-size: 10px; padding: 5px;
+    font-family: inherit; direction: rtl;
+  }
+  .admin-branch-row input:focus { outline: none; border-color: #4A9EFF88; }
+  .btn-add-branch {
+    background: #16a34a !important; border: none; border-radius: 4px;
+    color: #fff; padding: 5px 8px; cursor: pointer; font-size: 10px;
+    display: flex; align-items: center; gap: 3px; white-space: nowrap;
+  }
+  .branch-list-admin { margin-top: 6px; max-height: 80px; overflow-y: auto; }
+  .branch-tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: #1B52C422; border: 1px solid #4A9EFF33;
+    border-radius: 10px; padding: 2px 6px; margin: 2px; font-size: 8px; color: #ccc;
+  }
+  .branch-tag .del-branch {
+    background: none; border: none; color: #ef4444; cursor: pointer;
+    padding: 0 1px; line-height: 1; margin: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .branch-tag .del-branch svg { display: block; }
+
+  /* ── End Day / Archive ── */
+  .btn-end-day {
+    width: 100%; background: #7c3aed !important; color: #fff; border: none;
+    border-radius: 6px; padding: 6px; font-size: 10px; font-weight: bold;
+    cursor: pointer; margin: 3px 0; display: flex; align-items: center;
+    justify-content: center; gap: 5px;
+  }
+  .btn-archive {
+    width: 100%; background: #0891b2 !important; color: #fff; border: none;
+    border-radius: 6px; padding: 6px; font-size: 10px; font-weight: bold;
+    cursor: pointer; margin: 3px 0; display: flex; align-items: center;
+    justify-content: center; gap: 5px;
+  }
+  .btn-publish-update {
+    width: 100%; background: #4A9EFF !important; color: #fff; border: none;
+    border-radius: 6px; padding: 6px; font-size: 10px; font-weight: bold;
+    cursor: pointer; margin: 3px 0; display: flex; align-items: center;
+    justify-content: center; gap: 5px;
+  }
+  .archive-panel {
+    display: none; position: fixed; top:0;left:0;right:0;bottom:0;
+    background: #0a0e1aee; backdrop-filter: blur(5px); z-index: 10001; padding: 15px;
+  }
+  .archive-panel.show { display: block; }
+  .archive-content {
+    background: #10132a; border-radius: 12px; padding: 12px;
+    border: 1px solid #0891b2; max-height: 90vh; overflow-y: auto;
+  }
+  .archive-content h3 { color: #4A9EFF; font-size: 12px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px; }
+  .archive-list { display: flex; flex-direction: column; gap: 5px; max-height: 60vh; overflow-y: auto; }
+  .archive-item {
+    background: #0a1228; border: 1px solid #4A9EFF33; border-radius: 6px;
+    padding: 6px 8px; display: flex; align-items: center; justify-content: space-between;
+    gap: 6px;
+  }
+  .archive-item-info { font-size: 9px; color: #ccc; }
+  .archive-item-info b { color: #4A9EFF; font-size: 10px; }
+  .archive-item-actions { display: flex; gap: 3px; }
+  .archive-item-actions button {
+    background: #1B52C4; border: none; color: #fff; border-radius: 4px;
+    padding: 4px 6px; font-size: 8px; cursor: pointer; margin: 0;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .archive-item-actions button.danger { background: #dc2626; }
+  .archive-empty { text-align: center; color: #666; font-size: 9px; padding: 10px; }
+  .archive-close-row { margin-top: 8px; }
+
+  /* ── Force Update Overlay ── */
+  .update-overlay {
+    display: none; position: fixed; top:0;left:0;right:0;bottom:0;
+    background: #060812f5; backdrop-filter: blur(6px); z-index: 99999;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .update-overlay.show { display: flex; }
+  .update-box {
+    background: #10132a; border: 1.5px solid #4A9EFF; border-radius: 14px;
+    padding: 22px 18px; text-align: center; max-width: 280px;
+    position: relative;
+  }
+  .update-dismiss {
+    position: absolute !important; top: 6px; left: 6px;
+    width: auto !important; background: transparent !important; border: none !important;
+    cursor: pointer; padding: 3px !important; line-height: 1;
+    display: flex !important; align-items: center; justify-content: center;
+    border-radius: 50% !important; margin: 0 !important;
+  }
+  .update-dismiss:hover { background: #ffffff1a !important; }
+  .update-box svg { margin-bottom: 10px; }
+  .update-box h3 { color: #fff; font-size: 13px; margin-bottom: 6px; }
+  .update-box p { color: #aaa; font-size: 10px; margin-bottom: 14px; line-height: 1.6; }
+  .update-box button {
+    background: #1B52C4; border: none; color: #fff; border-radius: 8px;
+    padding: 9px 14px; cursor: pointer; font-size: 11px; font-weight: bold;
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="header" id="drag-handle">
+  <div class="header-left">
+    <!-- X icon -->
+    <span class="ic">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#ff4d4d" stroke-width="2.2"/>
+        <line x1="8" y1="8" x2="16" y2="16" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="16" y1="8" x2="8" y2="16" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <span class="header-title">تسجيل إلغاء</span>
+  </div>
+  <div class="header-btns">
+    <!-- Search button — always visible -->
+    <button class="search-btn" id="search-btn" onclick="showSearchPanel()" title="بحث عن أوردر">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2.2"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <!-- Install button (shows when PWA installable) -->
+    <button class="btn-install" id="btn-install" onclick="installPWA()">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3v13M7 11l5 5 5-5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 20h16" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      تثبيت
+    </button>
+    <!-- Pin button -->
+    <button class="pin-btn" id="pin-btn" onclick="toggleAlwaysOnTop()" title="فتح نافذة منفصلة">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" id="pin-icon">
+        <path d="M12 2L12 14M8 6l4-4 4 4M5 21l7-7 7 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="17" r="2" fill="#4A9EFF"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══ BODY ══ -->
+<div class="body">
+
+  <div>
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#4A9EFF" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/></svg>
+      رقم الأوردر *
+    </label>
+    <input type="text" id="order-num" placeholder="مثال: 284">
+  </div>
+
+  <div>
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="3" stroke="#4A9EFF" stroke-width="2"/><circle cx="12" cy="17" r="1.2" fill="#4A9EFF"/></svg>
+      رقم الزبون
+    </label>
+    <input type="text" id="phone-num" placeholder="07xxxxxxxxx">
+  </div>
+
+  <div>
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#4A9EFF" stroke-width="2"/></svg>
+      الفرع *
+    </label>
+    <select id="branch">
+      <option value="">— اختر الفرع —</option>
+      <option value="فرع الشعب">الشعب - Shaab</option><option value="فرع البنوك">البنوك - Bnook</option>
+      <option value="فرع الغدير">الغدير - Ghader</option><option value="فرع الحرية">الحرية - Alhurya</option>
+      <option value="فرع الدورة">الدورة - Dora</option><option value="فرع بسماية">بسماية - Basmaya</option>
+      <option value="فرع الغزالية">الغزالية - Ghazaliyya</option><option value="فرع الأعظمية">الأعظمية - Adhamiya</option>
+      <option value="فرع حي العامل">حي العامل - Hay-alamel</option><option value="فرع البوعيثة">البوعيثة - Baeaytha</option>
+      <option value="فرع حي الجهاد">حي الجهاد - Hay-jihad</option><option value="فرع شهداء البياع">شهداء البياع - Bayae</option>
+      <option value="فرع المدائن">المدائن - Madayin</option>
+    </select>
+  </div>
+
+  <div>
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#4A9EFF" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/><line x1="15" y1="9" x2="9" y2="15" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/></svg>
+      سبب الإلغاء *
+    </label>
+    <select id="reason" onchange="toggleCustom()">
+      <option value="">— اختر السبب —</option>
+      <option>زبون</option><option>تكرار</option>
+      <option>تحويل</option><option>عدم رد</option>
+      <option>خارج الزون</option>
+      <option value="مخصص">مخصص</option>
+    </select>
+    <div class="custom-reason" id="custom-wrap">
+      <input type="text" id="custom-reason-txt" placeholder="اكتب السبب...">
+    </div>
+  </div>
+
+  <hr>
+  <button class="btn-send" onclick="sendEntry()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    حفظ + نسخ
+  </button>
+
+  <!-- ══ Restore ══ -->
+  <hr>
+  <div class="restore-section">
+    <label>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 3v6h6" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      استرجاع طلب ملغي
+    </label>
+    <div class="restore-row">
+      <input type="text" id="restore-order" placeholder="رقم الأوردر">
+      <select id="restore-branch">
+        <option value="">الفرع</option>
+        <option value="فرع الشعب">الشعب - Shaab</option><option value="فرع البنوك">البنوك - Bnook</option>
+        <option value="فرع الغدير">الغدير - Ghader</option><option value="فرع الحرية">الحرية - Alhurya</option>
+        <option value="فرع الدورة">الدورة - Dora</option><option value="فرع بسماية">بسماية - Basmaya</option>
+        <option value="فرع الغزالية">الغزالية - Ghazaliyya</option><option value="فرع الأعظمية">الأعظمية - Adhamiya</option>
+        <option value="فرع حي العامل">حي العامل - Hay-alamel</option><option value="فرع البوعيثة">البوعيثة - Baeaytha</option>
+        <option value="فرع حي الجهاد">حي الجهاد - Hay-jihad</option><option value="فرع شهداء البياع">شهداء البياع - Bayae</option>
+        <option value="فرع المدائن">المدائن - Madayin</option>
+      </select>
+    </div>
+    <button class="btn-do-restore" onclick="restoreEntry()">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 3v6h6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      استرجاع من الإلغاءات
+    </button>
+  </div>
+
+  <div class="counter" id="counter">الإلغاءات اليوم: 0</div>
+
+  <div class="sync-status syncing" id="sync-status">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" id="sync-icon">
+      <path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M20 10a8 8 0 00-14.9-2M4 14a8 8 0 0014.9 2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+    <span id="sync-text">جاري التحميل...</span>
+  </div>
+
+  <button class="btn-admin" onclick="showAdminPanel()">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="#f59e0b" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    لوحة الأدمن
+  </button>
+  <div class="app-version-tag" id="app-version-tag"></div>
+  <div class="app-credit">SAJAD MOHAMMED</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ Admin Panel ══ -->
+<div id="adminPanel" class="admin-panel">
+  <div class="admin-content">
+    <h3>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="#4A9EFF" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      لوحة التحكم
+    </h3>
+    <input type="password" id="adminPass" class="admin-password" placeholder="كلمة المرور">
+    <button onclick="checkAdmin()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#fff" stroke-width="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      دخول
+    </button>
+    <div id="adminActions" style="display:none;margin-top:10px;">
+      <button onclick="generateWordReport()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#fff" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="#fff" stroke-width="2"/><line x1="8" y1="13" x2="16" y2="13" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="17" x2="16" y2="17" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        تصدير Word
+      </button>
+      <button onclick="copyAllToClipboard()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" stroke="#fff" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="#fff" stroke-width="2"/></svg>
+        نسخ الكل
+      </button>
+      <button onclick="clearAllData()" style="background:#dc2626;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M10 11v6M14 11v6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" stroke="#fff" stroke-width="2"/></svg>
+        حذف الكل
+      </button>
+      <button class="btn-end-day" onclick="endDay()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="2"/></svg>
+        إنهاء اليوم وأرشفة
+      </button>
+      <button class="btn-archive" onclick="showArchivePanel()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="#fff" stroke-width="2"/><path d="M5 8v11a2 2 0 002 2h10a2 2 0 002-2V8" stroke="#fff" stroke-width="2"/><line x1="10" y1="13" x2="14" y2="13" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        الأرشيف (الأيام السابقة)
+      </button>
+      <button class="btn-publish-update" onclick="publishUpdate()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M21.5 2v6h-6M2.5 22v-6h6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11.5a10 10 0 0118-6M22 12.5a10 10 0 01-18 6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        نشر تحديث جديد (الإصدار الحالي)
+      </button>
+      <button onclick="testFirebase()" style="background:#f59e0b;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="2"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14" stroke="#fff" stroke-width="2"/></svg>
+        اختبار الاتصال
+      </button>
+      <hr style="margin:6px 0;border-color:#4A9EFF33;">
+      <!-- إدارة الفروع -->
+      <div class="admin-branch-section">
+        <label>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#4A9EFF" stroke-width="2"/></svg>
+          إدارة الفروع
+        </label>
+        <div class="admin-branch-row">
+          <input type="text" id="newBranchInput" placeholder="اسم الفرع الجديد..." maxlength="30">
+          <button class="btn-add-branch" onclick="addBranchFromAdmin()">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+            إضافة
+          </button>
+        </div>
+        <div class="branch-list-admin" id="branchListAdmin"></div>
+      </div>
+      <hr style="margin:6px 0;border-color:#4A9EFF33;">
+      <button onclick="closeAdminPanel()" class="close-btn">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        إغلاق
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Archive Panel ══ -->
+<div id="archivePanel" class="archive-panel">
+  <div class="archive-content">
+    <h3>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="#4A9EFF" stroke-width="2"/><path d="M5 8v11a2 2 0 002 2h10a2 2 0 002-2V8" stroke="#4A9EFF" stroke-width="2"/></svg>
+      أرشيف الأيام السابقة
+    </h3>
+    <div class="archive-list" id="archiveList">
+      <div class="archive-empty">جاري التحميل...</div>
+    </div>
+    <div class="archive-close-row">
+      <button onclick="closeArchivePanel()" class="close-btn" style="width:100%;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        إغلاق
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Search Panel ══ -->
+<div id="searchPanel" class="search-panel">
+  <div class="search-content">
+    <h3>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4A9EFF" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/></svg>
+      البحث عن أوردر ملغي
+    </h3>
+    <div class="search-input-row">
+      <input type="text" id="search-order-input" placeholder="رقم الأوردر..." inputmode="numeric" oninput="searchOrder()" onkeydown="if(event.key==='Enter')searchOrder()" autofocus>
+      <button onclick="searchOrder()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2.2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        بحث
+      </button>
+    </div>
+    <div class="search-results" id="searchResults">
+      <div class="search-empty">أدخل رقم الأوردر للبحث</div>
+    </div>
+    <div class="search-close-row">
+      <button onclick="closeSearchPanel()" class="close-btn" style="width:100%;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        إغلاق
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Force Update Overlay ══ -->
+<div id="updateOverlay" class="update-overlay">
+  <div class="update-box">
+    <button class="update-dismiss" onclick="dismissUpdateOverlay()" title="تجاوز مؤقت">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#888" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#888" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M21.5 2v6h-6M2.5 22v-6h6" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11.5a10 10 0 0118-6M22 12.5a10 10 0 01-18 6" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h3>يوجد تحديث جديد للنظام</h3>
+    <p>تم إصدار نسخة جديدة من النظام. يرجى تحديث الصفحة الآن للاستمرار باستخدام التطبيق بشكل صحيح.</p>
+    <button onclick="forceUpdateNow()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M21.5 2v6h-6M2.5 22v-6h6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11.5a10 10 0 0118-6M22 12.5a10 10 0 01-18 6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      تحديث الآن
+    </button>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCBnLWtMPJBHF55yCZvjZJu34LMtTxc1u0",
+    authDomain: "cansel-9df25.firebaseapp.com",
+    projectId: "cansel-9df25",
+    databaseURL: "https://cansel-9df25-default-rtdb.firebaseio.com/"
+  };
+
+  let database = null, currentEntries = [], firebaseReady = false, isPinned = false;
+  let deferredInstallPrompt = null;
+  let currentSession = null; // { key, startDate } — the active (open) day session
+  let isSaving = false; // قفل يمنع تنفيذ sendEntry مرتين بالتوازي عند الضغط المزدوج/السريع
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⚠️ ملاحظة صريحة: هذي الحماية "رادع" فقط، مش حل نهائي حقيقي.
+  // أي كود JavaScript يشتغل بالمتصفح يقدر المتصفح يقرأه، وبالتالي أي
+  // مستخدم يقدر يشوفه بطرق متعددة (DevTools المنفصلة، حفظ الصفحة،
+  // أدوات خارجية...). هذا فقط يصعّب الأمر على المستخدم العادي ويبطّئ
+  // أي شخص يحاول ينسخ الكود بسرعة من المتصفح نفسه.
+  // ══════════════════════════════════════════════════════════════════
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    const k = e.key ? e.key.toUpperCase() : '';
+    // F12 = DevTools
+    if (k === 'F12') { e.preventDefault(); return; }
+    // Ctrl+U = View Source, Ctrl+S = Save Page
+    if (e.ctrlKey && (k === 'U' || k === 'S')) { e.preventDefault(); return; }
+    // Ctrl+Shift+I/J/C = DevTools panels
+    if (e.ctrlKey && e.shiftKey && (k === 'I' || k === 'J' || k === 'C')) { e.preventDefault(); return; }
+    // Cmd+Opt+I/J/C (Mac DevTools)
+    if (e.metaKey && e.altKey && (k === 'I' || k === 'J' || k === 'C')) { e.preventDefault(); return; }
+  });
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⚠️⚠️⚠️ تنبيه لأي مبرمج/مطور يعدّل هذا الملف ⚠️⚠️⚠️
+  // ──────────────────────────────────────────────────────────────────
+  // أي تعديل بهذا الملف — حتى لو حرف واحد أو فاصلة — يجب أن يصاحبه
+  // رفع رقم APP_VERSION أدناه (مثلاً من '1.0.3' إلى '1.0.4').
+  //
+  // السبب: النظام يعتمد على هذا الرقم لمعرفة هل عند المستخدم نسخة
+  // قديمة محفوظة بالكاش أو الـ Service Worker. إذا عدّلت الكود وما
+  // رفعت الرقم، الأجهزة المفتوحة بنسخة قديمة ما رح تنطلب تحديث
+  // ورح تستمر تشتغل بكود قديم/معطّل بدون أي تنبيه — وهذا يسبب أخطاء
+  // صعب تشخيصها لأن الكود "يبدو" محدث بس فعلياً المستخدم شغّال
+  // بنسخة غير اللي تتوقعها.
+  //
+  // الخطوات الصحيحة بعد أي تعديل:
+  //   1. زيد رقم APP_VERSION بالسطر تحت مباشرة.
+  //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
+  //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
+  // ══════════════════════════════════════════════════════════════════
+  const APP_VERSION = '1.3.0';
+
+  // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
+  // الجهاز محدث أم لسا شغّال بنسخة قديمة.
+  document.addEventListener('DOMContentLoaded', () => {
+    const tag = document.getElementById('app-version-tag');
+    if (tag) tag.textContent = `الإصدار ${APP_VERSION}`;
+  });
+
+  // ══ App Version / Force-Update System ══
+  // عند نشر نسخة جديدة من النظام: زيد رقم النسخة بالأعلى، ثم سجل دخول
+  // كأدمن واضغط زر "نشر تحديث جديد" — كل من فاتح النظام بنسخة قديمة
+  // بيوصله طلب تحديث فوري ولازم يحدث الصفحة قبل ما يكمل استخدام النظام.
+
+  function listenToAppVersion() {
+    if (!firebaseReady) return;
+    database.ref('appVersion/latest').on('value', (snap) => {
+      const latest = snap.exists() ? snap.val() : null;
+      // إذا تم تجاوز التنبيه بهذي الجلسة (زر ✕) ما نرجع نطلعه من جديد،
+      // حتى يقدر الأدمن يدخل ويرفع نسخة جديدة بدون ما يعلق بحلقة تحديث.
+      if (latest && latest !== APP_VERSION && sessionStorage.getItem('update_dismissed') !== latest) {
+        document.getElementById('updateOverlay').classList.add('show');
+      }
+    });
+  }
+
+  window.dismissUpdateOverlay = function() {
+    database.ref('appVersion/latest').once('value').then(snap => {
+      if (snap.exists()) sessionStorage.setItem('update_dismissed', snap.val());
+    }).catch(() => {});
+    document.getElementById('updateOverlay').classList.remove('show');
+  };
+
+  window.forceUpdateNow = async function() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    } catch(e) { /* ignore — still navigate below */ }
+    // location.reload() لوحدها ما تكفي على سفاري/آيفون لأن المتصفح
+    // ممكن يرجع يجيب نفس النسخة المخزنة. الحل المضمون هو نروح لرابط
+    // فيه معامل جديد (?v=...) يفرض على المتصفح يطلب نسخة شبكة جديدة
+    // 100% بدون أي كاش.
+    const url = new URL(location.href);
+    url.searchParams.set('v', Date.now());
+    location.replace(url.toString());
+  };
+
+  // للأدمن فقط: ينشر رقم النسخة الحالية كـ "آخر نسخة" فيخلي كل الأجهزة
+  // المفتوحة بنسخة أقدم تطلب التحديث فوراً. ملاحظة: جهازك أنت نفسه ما
+  // راح يطلب تحديث لأنه أساساً فاتح بآخر نسخة (نفس APP_VERSION).
+  window.publishUpdate = async function() {
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    if (!confirm(`نشر النسخة ${APP_VERSION} كآخر تحديث؟\n\nملاحظة: جهازك الحالي ما راح يطلع له تنبيه لأنه أصلاً فاتح بهذي النسخة.\nفقط الأجهزة الفاتحة نسخة أقدم رح تنطلب تحديث.`)) return;
+    try {
+      await database.ref('appVersion/latest').set(APP_VERSION);
+      showToast(`تم نشر الإصدار ${APP_VERSION} لجميع الأجهزة`, false, 3500, 'success');
+    } catch(e) { showToast('فشل النشر: ' + e.message, true); }
+  };
+
+  // ── PWA Install ──
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.getElementById('btn-install').classList.add('visible');
+  });
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('btn-install').classList.remove('visible');
+    deferredInstallPrompt = null;
+    showToast('تم تثبيت التطبيق بنجاح');
+  });
+  window.installPWA = async function() {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') document.getElementById('btn-install').classList.remove('visible');
+    deferredInstallPrompt = null;
+  };
+
+  // Register service worker for offline support, and watch for new versions
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker && newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorker.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+    }).catch(() => {});
+  }
+
+  function dateKeyFor(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function getTodayKey() {
+    return dateKeyFor(new Date());
+  }
+
+  // The Firebase path key for the currently OPEN session.
+  // Falls back to today's date until a session is created (lazily,
+  // on the first saved entry).
+  function getSessionKey() {
+    return currentSession ? currentSession.key : getTodayKey();
+  }
+
+  // Human-readable date the report should show: the date of the FIRST
+  // cancellation in the open session — not necessarily "today".
+  function getSessionDisplayDate() {
+    if (currentSession && currentSession.startDate) return currentSession.startDate;
+    return new Date().toLocaleDateString('ar-IQ');
+  }
+
+  function updateCounter() {
+    document.getElementById('counter').textContent = `الإلغاءات اليوم: ${currentEntries.length}`;
+    sessionStorage.setItem('current_cancel_entries', JSON.stringify(currentEntries));
+  }
+
+  // أيقونات SVG بسيطة تُستخدم بدل الإيموجي بكل أنحاء الواجهة
+  const ICONS = {
+    warning: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    box:     '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    success: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="#fff" stroke-width="2" stroke-linecap="round"/><polyline points="22 4 12 14.01 9 11.01" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    error:   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="2"/><line x1="8" y1="8" x2="16" y2="16" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="8" x2="8" y2="16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+    close:   '<svg width="9" height="9" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/></svg>'
+  };
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showToast(msg, isError = false, duration = 2200, icon = null) {
+    const t = document.getElementById('toast');
+    const iconSvg = ICONS[icon] || '';
+    t.innerHTML = iconSvg + `<span>${escapeHtml(msg)}</span>`;
+    t.classList.toggle('error', isError);
+    t.classList.add('show');
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  function setSyncStatus(status, msg = '') {
+    const el = document.getElementById('sync-status');
+    const tx = document.getElementById('sync-text');
+    const labels = { synced: 'متزامن', syncing: 'جاري...', error: 'خطأ في الاتصال' };
+    tx.textContent = msg || labels[status];
+    el.className = `sync-status ${status}`;
+  }
+
+  window.toggleCustom = function() {
+    document.getElementById('custom-wrap').classList.toggle('visible',
+      document.getElementById('reason').value === 'مخصص');
+  };
+
+  window.toggleAlwaysOnTop = function() {
+    if (isPinned) return;
+    isPinned = true;
+    document.getElementById('pin-btn').classList.add('active');
+    showToast('فُتحت نافذة منفصلة');
+    const w = 215, h = 580;
+    const popup = window.open(window.location.href, 'cancel_popup',
+      `width=${w},height=${h},left=${Math.max(0,screen.width-w-10)},top=10,toolbar=no,menubar=no,location=no,status=no,resizable=no,scrollbars=no`);
+    if (!popup) {
+      showToast('اسمح بالنوافذ المنبثقة', true);
+      isPinned = false;
+      document.getElementById('pin-btn').classList.remove('active');
+    } else { popup.focus(); }
+  };
+
+  window.testFirebase = async function() {
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    setSyncStatus('syncing');
+    try {
+      const ref = database.ref('test_connection');
+      await ref.set({ t: Date.now() });
+      const s = await ref.once('value');
+      if (s.exists()) { showToast('الاتصال يعمل'); setSyncStatus('synced'); await ref.remove(); }
+    } catch(e) { showToast('فشل: ' + e.message, true); setSyncStatus('error'); }
+  };
+
+  // Ensures a session document exists in Firebase before the first
+  // entry of the day is saved. The session's startDate is fixed at
+  // creation time and does not change even if entries are added after
+  // midnight — that's what keeps the report dated by the FIRST
+  // cancellation, not by calendar day.
+  async function ensureSession() {
+    if (currentSession) return currentSession;
+    const snap = await database.ref('session/current').once('value');
+    if (snap.exists()) {
+      currentSession = snap.val();
+      return currentSession;
+    }
+    const now = new Date();
+    const session = { key: dateKeyFor(now), startDate: now.toLocaleDateString('ar-IQ'), startedAt: now.getTime() };
+    await database.ref('session/current').set(session);
+    currentSession = session;
+    return session;
+  }
+
+  async function saveToFirebase(entry) {
+    if (!firebaseReady) return false;
+    try {
+      await ensureSession();
+      await database.ref(`cancellations/${getSessionKey()}/${entry.id}`).set(entry);
+      return true;
+    } catch(e) { showToast('خطأ: ' + e.message, true); return false; }
+  }
+
+  async function loadFromFirebase() {
+    if (!firebaseReady) return [];
+    try {
+      const s = await database.ref(`cancellations/${getSessionKey()}`).once('value');
+      return s.exists() ? Object.values(s.val()) : [];
+    } catch(e) { return []; }
+  }
+
+  function listenToFirebase() {
+    if (!firebaseReady) return;
+    database.ref('session/current').on('value', (sessSnap) => {
+      currentSession = sessSnap.exists() ? sessSnap.val() : null;
+      const key = getSessionKey();
+      database.ref(`cancellations/${key}`).off();
+      database.ref(`cancellations/${key}`).on('value', (s) => {
+        if (s.exists()) {
+          const c = Object.values(s.val()).sort((a,b) => a.id - b.id);
+          if (JSON.stringify(c) !== JSON.stringify(currentEntries)) { currentEntries = c; updateCounter(); setSyncStatus('synced'); }
+        } else { currentEntries = []; updateCounter(); }
+      }, () => setSyncStatus('error'));
+    });
+  }
+
+  window.sendEntry = async function() {
+    // حماية ضد الضغط المزدوج/السريع — لو العملية شغالة لسا، تجاهل أي
+    // استدعاء جديد بدل ما يصير تسجيل مكرر بالتوازي.
+    if (isSaving) return;
+    isSaving = true;
+    const sendBtn = document.querySelector('.btn-send');
+    if (sendBtn) sendBtn.disabled = true;
+
+    try {
+      const order  = document.getElementById('order-num').value.trim();
+      const phone  = document.getElementById('phone-num').value.trim();
+      const branch = document.getElementById('branch').value;
+      let reason   = document.getElementById('reason').value;
+      if (reason === 'مخصص') reason = document.getElementById('custom-reason-txt').value.trim();
+
+      if (!order)  { showToast('رقم الأوردر مطلوب', true); return; }
+      if (!branch) { showToast('الفرع مطلوب', true); return; }
+      if (!reason) { showToast('السبب مطلوب', true); return; }
+      if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+
+      // منع تكرار إلغاء نفس الأوردر بنفس الفرع (نفس الأوردر بفرع مختلف مسموح)
+      const dup = currentEntries.find(e => e.order === order && e.branch === branch);
+      if (dup) {
+        showToast(`هذا الأوردر ملغي مسبقاً في ${branch} الساعة ${dup.timeEn || dup.time}`, true, 4000, 'warning');
+        return;
+      }
+
+      const now = new Date();
+      let h12 = now.getHours() % 12;
+      if (h12 === 0) h12 = 12;
+      const ampm = now.getHours() < 12 ? 'ص' : 'م';
+      const timeEn = String(h12).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0') + ' ' + ampm;
+      const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
+        time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
+        timeEn,
+        date: getTodayKey(), createdAt: now.getTime() };
+
+      // نضيفه فوراً لـ currentEntries المحلي قبل الحفظ بفايربيس — هذا
+      // يضمن إنه أي ضغطة تالية (حتى لو القفل تجاوزها بالغلط) تلقى
+      // التكرار بفحص dup أعلاه فوراً بدون انتظار رد الشبكة.
+      currentEntries.push(entry);
+      currentEntries.sort((a,b) => a.id - b.id);
+
+      // ننسخ للحافظة فوراً (قبل أي await) — لأن متصفحات الموبايل ترفض
+      // طلب النسخ إذا صار بعد تأخير شبكة. هذا يضمن النسخ يرتبط مباشرة
+      // برد فعل ضغطة المستخدم.
+      const msg = `🏪 الفرع: ${branch}\n📦 رقم الأوردر: ${order}\n🚫 سبب الالغاء: ${reason}\n⏰ الوقت: ${timeEn}`;
+      let copied = false;
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = msg;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch(e) { copied = false; }
+      if (!copied && navigator.clipboard) {
+        navigator.clipboard.writeText(msg).then(() => { copied = true; }).catch(() => {});
+      }
+
+      setSyncStatus('syncing');
+      if (!await saveToFirebase(entry)) {
+        // فشل الحفظ بفايربيس — نرجع نشيله من القائمة المحلية حتى ما
+        // يبقى ظاهر محلياً وهو غير محفوظ فعلياً بالسيرفر.
+        currentEntries = currentEntries.filter(e => e.id !== entry.id);
+        setSyncStatus('error');
+        return;
+      }
+
+      updateCounter(); setSyncStatus('synced');
+      showToast(`تم حفظ ${order} ونسخ الرسالة`);
+
+      ['order-num','phone-num','branch','reason','custom-reason-txt'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('custom-wrap').classList.remove('visible');
+      document.getElementById('order-num').focus();
+    } finally {
+      isSaving = false;
+      if (sendBtn) sendBtn.disabled = false;
+    }
+  };
+
+  window.restoreEntry = async function() {
+    const orderNum = document.getElementById('restore-order').value.trim();
+    const branch   = document.getElementById('restore-branch').value;
+    if (!orderNum) { showToast('أدخل رقم الأوردر', true); return; }
+    if (!branch)   { showToast('اختر الفرع', true); return; }
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    setSyncStatus('syncing');
+    const match = currentEntries.find(e => e.order === orderNum && e.branch === branch);
+    if (!match) { showToast(`لم يُعثر على ${orderNum} في ${branch}`, true); setSyncStatus('synced'); return; }
+    try {
+      await database.ref(`cancellations/${getSessionKey()}/${match.id}`).remove();
+      currentEntries = currentEntries.filter(e => e.id !== match.id);
+      updateCounter(); setSyncStatus('synced');
+      showToast(`تم استرجاع أوردر ${orderNum}`);
+      document.getElementById('restore-order').value = '';
+      document.getElementById('restore-branch').value = '';
+    } catch(e) { showToast('فشل الاسترجاع', true); setSyncStatus('error'); }
+  };
+
+  window.showAdminPanel  = () => {
+    document.getElementById('adminPanel').classList.add('show');
+    renderBranchListAdmin();
+  };
+  window.closeAdminPanel = () => {
+    document.getElementById('adminPanel').classList.remove('show');
+    document.getElementById('adminActions').style.display = 'none';
+    document.getElementById('adminPass').value = '';
+  };
+  window.checkAdmin = () => {
+    if (document.getElementById('adminPass').value === '2001') {
+      document.getElementById('adminActions').style.display = 'block';
+      renderBranchListAdmin();
+      showToast('مرحباً أيها الأدمن');
+    } else showToast('كلمة المرور غير صحيحة', true);
+  };
+
+  // ── Branch Management (Firebase-backed) ──
+  const DEFAULT_BRANCHES = [
+    'فرع الشعب','فرع البنوك','فرع الغدير','فرع الحرية',
+    'فرع الدورة','فرع بسماية','فرع الغزالية','فرع الأعظمية',
+    'فرع حي العامل','فرع البوعيثة','فرع حي الجهاد','فرع شهداء البياع',
+    'فرع المدائن'
+  ];
+
+  let customBranches = []; // synced live from Firebase
+
+  function getAllBranches() {
+    return [...DEFAULT_BRANCHES, ...customBranches];
+  }
+
+  // أسماء عرض ثنائية اللغة للفروع الافتراضية: المفتاح هو القيمة
+  // الحقيقية المخزّنة (فرع الشعب...) والقيمة هي النص المعروض بالقائمة
+  // (الشعب - Shaab). هذا يضمن إن المخزون بفايربيس والتقرير يبقوا
+  // بالاسم العربي الأصلي بكلمة "فرع"، بينما القائمة تعرض شكل مختصر.
+  const BRANCH_DISPLAY_LABELS = {
+    'فرع الشعب': 'الشعب - Shaab',
+    'فرع البنوك': 'البنوك - Bnook',
+    'فرع الغدير': 'الغدير - Ghader',
+    'فرع الحرية': 'الحرية - Alhurya',
+    'فرع الدورة': 'الدورة - Dora',
+    'فرع بسماية': 'بسماية - Basmaya',
+    'فرع الغزالية': 'الغزالية - Ghazaliyya',
+    'فرع الأعظمية': 'الأعظمية - Adhamiya',
+    'فرع حي العامل': 'حي العامل - Hay-alamel',
+    'فرع البوعيثة': 'البوعيثة - Baeaytha',
+    'فرع حي الجهاد': 'حي الجهاد - Hay-jihad',
+    'فرع شهداء البياع': 'شهداء البياع - Bayae',
+    'فرع المدائن': 'المدائن - Madayin'
+  };
+
+  function rebuildBranchSelects() {
+    const branches = getAllBranches();
+    ['branch','restore-branch'].forEach(id => {
+      const sel = document.getElementById(id);
+      const cur = sel.value;
+      const placeholder = sel.options[0];
+      sel.innerHTML = '';
+      sel.appendChild(placeholder);
+      branches.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b;
+        opt.textContent = BRANCH_DISPLAY_LABELS[b] || b;
+        sel.appendChild(opt);
+      });
+      if (cur) sel.value = cur;
+    });
+  }
+
+  function renderBranchListAdmin() {
+    const container = document.getElementById('branchListAdmin');
+    if (!container) return;
+    if (customBranches.length === 0) {
+      container.innerHTML = '<span style="font-size:8px;color:#666;">لا توجد فروع مضافة</span>';
+      return;
+    }
+    container.innerHTML = customBranches.map((b, i) =>
+      `<span class="branch-tag">${escapeHtml(b)}<button class="del-branch" onclick="deleteBranchAdmin(${i})" title="حذف">${ICONS.close}</button></span>`
+    ).join('');
+  }
+
+  // Listen to branches in Firebase — updates all clients live
+  function listenToBranches() {
+    if (!firebaseReady) return;
+    database.ref('branches').on('value', snap => {
+      const val = snap.val();
+      customBranches = val ? Object.values(val) : [];
+      rebuildBranchSelects();
+      renderBranchListAdmin();
+    });
+  }
+
+  window.addBranchFromAdmin = async function() {
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    const inp = document.getElementById('newBranchInput');
+    let name = inp.value.trim();
+    if (!name) { showToast('أدخل اسم الفرع', true); return; }
+    if (getAllBranches().includes(name)) { showToast('الفرع موجود مسبقاً', true); return; }
+    try {
+      await database.ref('branches').push(name);
+      inp.value = '';
+      showToast('تم إضافة ' + name);
+    } catch(e) { showToast('فشل الحفظ', true); }
+  };
+
+  window.deleteBranchAdmin = async function(index) {
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    const name = customBranches[index];
+    if (!confirm('حذف ' + name + '؟')) return;
+    try {
+      // find the key for this branch value
+      const snap = await database.ref('branches').once('value');
+      const val = snap.val();
+      if (!val) return;
+      const key = Object.keys(val).find(k => val[k] === name);
+      if (key) await database.ref('branches/' + key).remove();
+      showToast('تم حذف الفرع');
+    } catch(e) { showToast('فشل الحذف', true); }
+  };
+
+
+  // Builds the report HTML for a given set of entries + display date.
+  // Used both for the live (current session) report and for exporting
+  // an archived day from the archive panel.
+  function buildReportHtml(entries, displayDate) {
+    const BRANCH_ORDER = getAllBranches();
+    const grouped = {};
+    entries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
+
+    const sortedBranches = BRANCH_ORDER.filter(b => grouped[b])
+      .concat(Object.keys(grouped).filter(b => !BRANCH_ORDER.includes(b)));
+
+    const TH = 'border:2px solid #333;padding:5px 10px;color:#cc0000;text-align:center;font-size:11pt;background:#fff;';
+    const TD = 'border:1.5px solid #555;padding:5px 10px;text-align:center;font-size:11pt;';
+    const BRANCH_ROW = 'border:2px solid #333;padding:6px 10px;text-align:center;font-size:11pt;font-weight:bold;color:#cc0000;background:#f3f3f3;';
+
+    // جدول واحد متصل لكل التقرير: صف عنوان فرع (يمتد عبر 3 أعمدة) ثم
+    // صفوف إلغاءات ذلك الفرع، وهكذا لكل فرع — بدون أي جدول منفصل.
+    // هذا يضمن إنه ينسخ كوحدة واحدة متصلة لإكسل بدون تبعثر.
+    let rowsHtml = '';
+    for (const branch of sortedBranches) {
+      const branchEntries = grouped[branch];
+      rowsHtml += `<tr>
+        <td colspan="3" style="${BRANCH_ROW}">الغاء ${branch} ـ (${branchEntries.length})</td>
+      </tr>`;
+      rowsHtml += branchEntries.map(e => `<tr>
+        <td style="${TD}">${e.order}</td>
+        <td style="${TD}">${e.reason}</td>
+        <td style="${TD}font-weight:bold;direction:ltr;">${e.phone||''}</td>
+      </tr>`).join('');
+    }
+
+    return `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقرير الإلغاءات</title>
+    <style>
+      body{font-family:Arial;margin:25px 30px;direction:rtl;}
+      .sub{text-align:center;font-size:13pt;font-weight:bold;color:#16324f;margin-bottom:14px;}
+      .main-table{width:100%;border-collapse:collapse;font-family:Arial;table-layout:fixed;}
+      .footer{margin-top:18px;border-top:1px solid #ccc;padding-top:10px;}
+      .footer table{width:100%;border-collapse:collapse;}
+      .footer td{border:none;padding:2px 6px;text-align:center;font-size:10pt;color:#333;}
+    </style>
+    </head><body>
+    <div class="sub">التاريخ: ${displayDate} | إجمالي الإلغاءات: ${entries.length}</div>
+    <table dir="rtl" class="main-table">
+      <colgroup><col style="width:25%;"><col style="width:35%;"><col style="width:40%;"></colgroup>
+      <thead><tr>
+        <th style="${TH}">رقم الاوردر</th>
+        <th style="${TH}">السبب</th>
+        <th style="${TH}">رقم الزبون</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="footer"><table dir="rtl"><tr>
+      ${Object.entries(grouped).map(([b,es])=>`<td>${b}: <b>${es.length}</b></td>`).join('')}
+      <td>المجموع: <b>${entries.length}</b></td>
+    </tr></table></div>
+    </body></html>`;
+  }
+
+  function downloadDocBlob(html, filename) {
+    const blob = new Blob([html],{type:'application/msword'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  window.generateWordReport = function() {
+    if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
+    const displayDate = getSessionDisplayDate();
+    const html = buildReportHtml(currentEntries, displayDate);
+    downloadDocBlob(html, `تقرير_الالغاءات_${getSessionKey()}.doc`);
+    showToast('تم تصدير التقرير');
+  };
+
+  window.copyAllToClipboard = function() {
+    if (!currentEntries.length) { showToast('لا توجد بيانات', true); return; }
+    const grouped = {};
+    currentEntries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
+    const LINE = '─'.repeat(34);
+    let text = `تقرير الإلغاءات — ${getSessionDisplayDate()}\n${LINE}\n\n`;
+    for (const [branch, entries] of Object.entries(grouped)) {
+      text += `${branch} (${entries.length})\n`;
+      text += `${'رقم الأوردر'.padStart(10)} │ ${'السبب'.padEnd(10)} │ الرقم\n`;
+      text += `${'─'.repeat(10)}─┼─${'─'.repeat(10)}─┼─${'─'.repeat(14)}\n`;
+      entries.forEach(e => { text += `${String(e.order).padStart(10)} │ ${e.reason.padEnd(10)} │ ${e.phone||'—'}\n`; });
+      text += '\n';
+    }
+    text += `${LINE}\nإجمالي الإلغاءات: ${currentEntries.length}\n`;
+    text += Object.entries(grouped).map(([b,es]) => `• ${b}: ${es.length}`).join('\n');
+    navigator.clipboard.writeText(text);
+    showToast('تم نسخ كل الإلغاءات');
+  };
+
+  window.clearAllData = function() {
+    if (confirm('هل أنت متأكد من حذف كل بيانات اليوم؟')) {
+      database.ref(`cancellations/${getSessionKey()}`).remove()
+        .then(() => { currentEntries=[]; updateCounter(); showToast('تم حذف كل البيانات'); })
+        .catch(() => showToast('فشل الحذف', true));
+    }
+  };
+
+  // ── End Day / Archive ──
+  // Archives the currently open session under archive/{key}, then
+  // clears the live cancellations path and the session pointer so the
+  // NEXT saved entry starts a brand-new session (new startDate).
+  window.endDay = async function() {
+    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
+    if (!currentEntries.length) { showToast('لا توجد بيانات لإنهاء اليوم', true); return; }
+    if (!confirm(`إنهاء اليوم وأرشفة ${currentEntries.length} إلغاء بتاريخ ${getSessionDisplayDate()}؟`)) return;
+    try {
+      const key = getSessionKey();
+      const displayDate = getSessionDisplayDate();
+      await database.ref(`archive/${key}`).set({
+        key, displayDate,
+        closedAt: Date.now(),
+        entries: currentEntries
+      });
+      await database.ref(`cancellations/${key}`).remove();
+      await database.ref('session/current').remove();
+      currentSession = null;
+      currentEntries = [];
+      updateCounter();
+      showToast('تم أرشفة اليوم بنجاح');
+    } catch(e) { showToast('فشل الأرشفة: ' + e.message, true); }
+  };
+
+  // ── Archive Browser ──
+  window.showArchivePanel = async function() {
+    document.getElementById('archivePanel').classList.add('show');
+    await renderArchiveList();
+  };
+  window.closeArchivePanel = function() {
+    document.getElementById('archivePanel').classList.remove('show');
+  };
+
+  async function renderArchiveList() {
+    const container = document.getElementById('archiveList');
+    container.innerHTML = '<div class="archive-empty">جاري التحميل...</div>';
+    if (!firebaseReady) { container.innerHTML = '<div class="archive-empty">Firebase غير جاهز</div>'; return; }
+    try {
+      const snap = await database.ref('archive').once('value');
+      if (!snap.exists()) { container.innerHTML = '<div class="archive-empty">لا توجد أرشفات سابقة</div>'; return; }
+      const days = Object.values(snap.val()).sort((a,b) => b.closedAt - a.closedAt);
+      container.innerHTML = days.map(day => `
+        <div class="archive-item">
+          <div class="archive-item-info"><b>${day.displayDate}</b><br>عدد الإلغاءات: ${day.entries ? day.entries.length : 0}</div>
+          <div class="archive-item-actions">
+            <button onclick="exportArchiveDay('${day.key}')">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#fff" stroke-width="2"/></svg>
+              Word
+            </button>
+            <button class="danger" onclick="deleteArchiveDay('${day.key}')">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+              حذف
+            </button>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) { container.innerHTML = '<div class="archive-empty">فشل تحميل الأرشيف</div>'; }
+  }
+
+  window.exportArchiveDay = async function(key) {
+    try {
+      const snap = await database.ref(`archive/${key}`).once('value');
+      if (!snap.exists()) { showToast('لم يُعثر على الأرشفة', true); return; }
+      const day = snap.val();
+      const html = buildReportHtml(day.entries || [], day.displayDate);
+      downloadDocBlob(html, `تقرير_الالغاءات_${key}.doc`);
+      showToast('تم تصدير التقرير');
+    } catch(e) { showToast('فشل التصدير', true); }
+  };
+
+  window.deleteArchiveDay = async function(key) {
+    if (!confirm('حذف هذه الأرشفة نهائياً؟')) return;
+    try {
+      await database.ref(`archive/${key}`).remove();
+      showToast('تم حذف الأرشفة');
+      renderArchiveList();
+    } catch(e) { showToast('فشل الحذف', true); }
+  };
+
+  // ── Search ──
+  window.showSearchPanel = function() {
+    document.getElementById('searchPanel').classList.add('show');
+    document.getElementById('search-order-input').value = '';
+    document.getElementById('searchResults').innerHTML = '<div class="search-empty">أدخل رقم الأوردر للبحث</div>';
+    setTimeout(() => document.getElementById('search-order-input').focus(), 50);
+  };
+  window.closeSearchPanel = function() {
+    document.getElementById('searchPanel').classList.remove('show');
+  };
+
+  window.searchOrder = function() {
+    const q = document.getElementById('search-order-input').value.trim();
+    const container = document.getElementById('searchResults');
+    if (!q) { container.innerHTML = '<div class="search-empty">أدخل رقم الأوردر للبحث</div>'; return; }
+    let matches = currentEntries.filter(e => e.order.startsWith(q));
+    // الأوردرات المطابقة بالضبط تطلع أول بالنتائج
+    matches.sort((a,b) => (a.order === q ? -1 : 0) - (b.order === q ? -1 : 0));
+    if (!matches.length) {
+      container.innerHTML = `<div class="search-empty">لا يوجد إلغاء بهذا الرقم اليوم</div>`;
+      return;
+    }
+    container.innerHTML = matches.map(e => `
+      <div class="search-result-item">
+        <div class="sr-order">${ICONS.box}<span>أوردر #${escapeHtml(e.order)}</span></div>
+        <div class="sr-row"><span class="sr-label">الفرع:</span><span>${escapeHtml(e.branch)}</span></div>
+        <div class="sr-row"><span class="sr-label">السبب:</span><span>${escapeHtml(e.reason)}</span></div>
+        <div class="sr-row"><span class="sr-label">الوقت:</span><span style="direction:ltr;font-family:monospace;">${escapeHtml(e.timeEn || e.time)}</span></div>
+      </div>
+    `).join('');
+  };
+
+  function initFirebase() {
+    try {
+      if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        firebaseReady = true;
+        database.ref('.info/connected').on('value', snap => {
+          if (snap.val()) { setSyncStatus('synced'); loadInitialData(); listenToFirebase(); listenToBranches(); listenToAppVersion(); }
+          else setSyncStatus('error', 'غير متصل');
+        });
+      } else { setSyncStatus('error','خطأ في التحميل'); setTimeout(initFirebase,1000); }
+    } catch(e) { setSyncStatus('error','خطأ في التهيئة'); setTimeout(initFirebase,1000); }
+  }
+
+  async function loadInitialData() {
+    try {
+      const snap = await database.ref('session/current').once('value');
+      currentSession = snap.exists() ? snap.val() : null;
+    } catch(e) { currentSession = null; }
+    const data = await loadFromFirebase();
+    if (data.length) { currentEntries = data.sort((a,b)=>a.id-b.id); updateCounter(); }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { updateCounter(); initFirebase(); });
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+</body>
+</html>
