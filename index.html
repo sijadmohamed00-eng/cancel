@@ -889,7 +889,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.6.1';
+  const APP_VERSION = '1.6.2';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -1177,7 +1177,9 @@
       const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
         time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
         timeEn,
-        date: getSessionKey(), createdAt: now.getTime() };
+        date: (currentEntries.length > 0
+          ? dateKeyFor(new Date(Math.min(...currentEntries.map(e => e.createdAt || e.id))))
+          : getSessionKey()), createdAt: now.getTime() };
 
       // نضيفه فوراً لـ currentEntries المحلي قبل الحفظ بفايربيس — هذا
       // يضمن إنه أي ضغطة تالية (حتى لو القفل تجاوزها بالغلط) تلقى
