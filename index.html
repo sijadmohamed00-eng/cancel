@@ -889,7 +889,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.6.3';
+  const APP_VERSION = '1.6.4';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -991,8 +991,23 @@
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
+  // يوم العمل يبدأ الساعة 4 فجر — لو الوقت بين 0:00 و 3:59 فجر
+  // يعتبر نفس يوم العمل السابق (اليوم الميلادي أمس)
+  const WORK_DAY_START_HOUR = 4; // 4 فجر = بداية يوم العمل الجديد
+
+  function getWorkDayKey(date) {
+    const d = date || new Date();
+    if (d.getHours() < WORK_DAY_START_HOUR) {
+      // قبل 4 فجر — ينتمي لـ يوم العمل السابق
+      const prev = new Date(d);
+      prev.setDate(prev.getDate() - 1);
+      return dateKeyFor(prev);
+    }
+    return dateKeyFor(d);
+  }
+
   function getTodayKey() {
-    return dateKeyFor(new Date());
+    return getWorkDayKey(new Date());
   }
 
   // The Firebase path key for the currently OPEN session.
@@ -1002,15 +1017,21 @@
     return currentSession ? currentSession.key : getTodayKey();
   }
 
-  // Human-readable date the report should show: the date of the FIRST
-  // (oldest) cancellation in the open session — not the session creation date.
+  // Human-readable date: يوم العمل بناءً على أقدم إلغاء موجود
+  // (يوم العمل يبدأ 4 فجر — لو قبلها يرجع يوم العمل السابق)
   function getSessionDisplayDate() {
     if (currentEntries.length > 0) {
       const oldest = new Date(Math.min(...currentEntries.map(e => e.createdAt || e.id)));
-      return oldest.toLocaleDateString('ar-IQ');
+      return new Date(oldest.getFullYear(), oldest.getMonth(),
+        oldest.getHours() < WORK_DAY_START_HOUR ? oldest.getDate() - 1 : oldest.getDate()
+      ).toLocaleDateString('ar-IQ');
     }
     if (currentSession && currentSession.startDate) return currentSession.startDate;
-    return new Date().toLocaleDateString('ar-IQ');
+    return new Date(
+      new Date().getHours() < WORK_DAY_START_HOUR
+        ? new Date(Date.now() - 86400000)
+        : new Date()
+    ).toLocaleDateString('ar-IQ');
   }
 
   function updateCounter() {
@@ -1181,9 +1202,7 @@
       const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
         time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
         timeEn,
-        date: (currentEntries.length > 0
-          ? dateKeyFor(new Date(Math.min(...currentEntries.map(e => e.createdAt || e.id))))
-          : getSessionKey()), createdAt: now.getTime() };
+        date: getWorkDayKey(now), createdAt: now.getTime() };
 
       // نضيفه فوراً لـ currentEntries المحلي قبل الحفظ بفايربيس — هذا
       // يضمن إنه أي ضغطة تالية (حتى لو القفل تجاوزها بالغلط) تلقى
