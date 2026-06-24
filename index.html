@@ -889,7 +889,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.6.2';
+  const APP_VERSION = '1.6.3';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -1003,8 +1003,12 @@
   }
 
   // Human-readable date the report should show: the date of the FIRST
-  // cancellation in the open session — not necessarily "today".
+  // (oldest) cancellation in the open session — not the session creation date.
   function getSessionDisplayDate() {
+    if (currentEntries.length > 0) {
+      const oldest = new Date(Math.min(...currentEntries.map(e => e.createdAt || e.id)));
+      return oldest.toLocaleDateString('ar-IQ');
+    }
     if (currentSession && currentSession.startDate) return currentSession.startDate;
     return new Date().toLocaleDateString('ar-IQ');
   }
