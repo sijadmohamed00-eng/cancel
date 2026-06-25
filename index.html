@@ -298,30 +298,17 @@
     cursor: pointer; margin: 3px 0; display: flex; align-items: center;
     justify-content: center; gap: 5px;
   }
-  .auto-archive-section {
+  /* الأرشفة التلقائية ثابتة — لا واجهة لها */
+  /* ── Telegram Settings ── */
+  .tg-settings-section {
     margin: 6px 0; padding: 8px; background: #0a1228;
-    border: 1px solid #7c3aed33; border-radius: 6px;
+    border: 1px solid #29b6f633; border-radius: 6px;
   }
-  .auto-archive-section label {
-    color: #7c3aed; font-size: 9px; margin-bottom: 4px; display: flex;
-    align-items: center; gap: 4px;
-  }
-  .auto-archive-row { display: flex; gap: 4px; margin-top: 4px; }
-  .auto-archive-row input[type="time"] {
-    flex: 1; background: #10132a; border: 1px solid #4A9EFF44;
-    border-radius: 4px; color: #fff; font-size: 10px; padding: 5px;
-    font-family: inherit; direction: ltr;
-  }
-  .btn-save-time {
-    background: #7c3aed; border: none; border-radius: 4px;
-    color: #fff; padding: 5px 10px; cursor: pointer; font-size: 9px;
-  }
-  .btn-disable-time {
-    width: 100%; background: transparent; border: 1px solid #ef444455;
-    border-radius: 4px; color: #ef4444; padding: 4px; cursor: pointer;
-    font-size: 8px; margin-top: 5px;
-  }
-  .auto-archive-status { font-size: 8px; color: #999; margin-top: 5px; }
+  .tg-settings-section label { color: #29b6f6; font-size: 9px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+  .btn-tg-save  { background: #29b6f6 !important; border: none; border-radius: 4px; color: #fff; padding: 4px 8px; cursor: pointer; font-size: 9px; flex:1; }
+  .btn-tg-test  { background: #7c3aed !important; border: none; border-radius: 4px; color: #fff; padding: 4px 8px; cursor: pointer; font-size: 9px; flex:1; }
+  .btn-tg-clear { background: transparent; border: 1px solid #ef444455; border-radius: 4px; color: #ef4444; padding: 4px 8px; cursor: pointer; font-size: 9px; flex:1; }
+  .tg-status { font-size: 8px; color: #999; margin-top: 5px; text-align: center; }
   .btn-archive {
     width: 100%; background: #0891b2 !important; color: #fff; border: none;
     border-radius: 6px; padding: 6px; font-size: 10px; font-weight: bold;
@@ -658,18 +645,7 @@
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="2"/></svg>
         إنهاء اليوم وأرشفة
       </button>
-      <div class="auto-archive-section">
-        <label>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#4A9EFF" stroke-width="2"/><path d="M12 7v5l3 3" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round"/></svg>
-          أرشفة تلقائية يومياً بالساعة
-        </label>
-        <div class="auto-archive-row">
-          <input type="time" id="autoArchiveTimeInput" value="23:00">
-          <button class="btn-save-time" onclick="saveAutoArchiveTime()">تفعيل/حفظ</button>
-        </div>
-        <button class="btn-disable-time" onclick="disableAutoArchiveTime()">تعطيل الأرشفة التلقائية</button>
-        <div class="auto-archive-status" id="autoArchiveStatus">غير مفعّلة</div>
-      </div>
+      <!-- الأرشفة التلقائية ثابتة على 04:00 فجر — لا يوجد إعداد يدوي -->
       <button class="btn-archive" onclick="showArchivePanel()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="#fff" stroke-width="2"/><path d="M5 8v11a2 2 0 002 2h10a2 2 0 002-2V8" stroke="#fff" stroke-width="2"/><line x1="10" y1="13" x2="14" y2="13" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
         الأرشيف (الأيام السابقة)
@@ -691,6 +667,21 @@
         اختبار الاتصال
       </button>
       <hr style="margin:6px 0;border-color:#4A9EFF33;">
+      <!-- إعدادات تلقرام -->
+      <div class="tg-settings-section">
+        <label>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M21.5 4.5L2.5 11l7 2.5L17 8l-6.5 7.5 7 3z" stroke="#29b6f6" stroke-width="2" stroke-linejoin="round"/></svg>
+          إشعار تلقرام عند الأرشفة
+        </label>
+        <input type="text" id="tgBotToken" placeholder="Bot Token" style="direction:ltr;font-size:9px;margin-top:4px;">
+        <input type="text" id="tgChatId"   placeholder="Chat ID" style="direction:ltr;font-size:9px;margin-top:4px;">
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button class="btn-tg-save"  onclick="saveTelegramSettings()">حفظ</button>
+          <button class="btn-tg-test"  onclick="testTelegramSettings()">اختبار</button>
+          <button class="btn-tg-clear" onclick="clearTelegramSettings()">مسح</button>
+        </div>
+        <div class="tg-status" id="tgStatus">غير مفعّل</div>
+      </div>
       <!-- إدارة الفروع -->
       <div class="admin-branch-section">
         <label>
@@ -889,7 +880,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.6.4';
+  const APP_VERSION = '1.6.0';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -991,24 +982,7 @@
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  // يوم العمل يبدأ الساعة 4 فجر — لو الوقت بين 0:00 و 3:59 فجر
-  // يعتبر نفس يوم العمل السابق (اليوم الميلادي أمس)
-  const WORK_DAY_START_HOUR = 4; // 4 فجر = بداية يوم العمل الجديد
-
-  function getWorkDayKey(date) {
-    const d = date || new Date();
-    if (d.getHours() < WORK_DAY_START_HOUR) {
-      // قبل 4 فجر — ينتمي لـ يوم العمل السابق
-      const prev = new Date(d);
-      prev.setDate(prev.getDate() - 1);
-      return dateKeyFor(prev);
-    }
-    return dateKeyFor(d);
-  }
-
-  function getTodayKey() {
-    return getWorkDayKey(new Date());
-  }
+  // getTodayKey معرّفة في قسم الأرشفة التلقائية (تعتمد على منطق الدوام ١٠ص-٤ فجر)
 
   // The Firebase path key for the currently OPEN session.
   // Falls back to today's date until a session is created (lazily,
@@ -1017,21 +991,11 @@
     return currentSession ? currentSession.key : getTodayKey();
   }
 
-  // Human-readable date: يوم العمل بناءً على أقدم إلغاء موجود
-  // (يوم العمل يبدأ 4 فجر — لو قبلها يرجع يوم العمل السابق)
+  // Human-readable date the report should show: the date of the FIRST
+  // cancellation in the open session — not necessarily "today".
   function getSessionDisplayDate() {
-    if (currentEntries.length > 0) {
-      const oldest = new Date(Math.min(...currentEntries.map(e => e.createdAt || e.id)));
-      return new Date(oldest.getFullYear(), oldest.getMonth(),
-        oldest.getHours() < WORK_DAY_START_HOUR ? oldest.getDate() - 1 : oldest.getDate()
-      ).toLocaleDateString('ar-IQ');
-    }
     if (currentSession && currentSession.startDate) return currentSession.startDate;
-    return new Date(
-      new Date().getHours() < WORK_DAY_START_HOUR
-        ? new Date(Date.now() - 86400000)
-        : new Date()
-    ).toLocaleDateString('ar-IQ');
+    return new Date().toLocaleDateString('ar-IQ');
   }
 
   function updateCounter() {
@@ -1202,7 +1166,7 @@
       const entry = { id: Date.now(), order, phone: phone||'', branch, reason,
         time: now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}),
         timeEn,
-        date: getWorkDayKey(now), createdAt: now.getTime() };
+        date: getTodayKey(), createdAt: now.getTime() };
 
       // نضيفه فوراً لـ currentEntries المحلي قبل الحفظ بفايربيس — هذا
       // يضمن إنه أي ضغطة تالية (حتى لو القفل تجاوزها بالغلط) تلقى
@@ -1273,6 +1237,7 @@
   window.showAdminPanel  = () => {
     document.getElementById('adminPanel').classList.add('show');
     renderBranchListAdmin();
+    loadTelegramSettings();
   };
   window.closeAdminPanel = () => {
     document.getElementById('adminPanel').classList.remove('show');
@@ -1502,6 +1467,8 @@
   async function archiveCurrentSessionSilently() {
     const key = getSessionKey();
     const displayDate = getSessionDisplayDate();
+    // نحفظ نسخة من الإلغاءات قبل المسح لإرسالها لتلقرام
+    const entriesSnapshot = [...currentEntries];
     await database.ref(`archive/${key}`).set({
       key, displayDate,
       closedAt: Date.now(),
@@ -1512,6 +1479,8 @@
     currentSession = null;
     currentEntries = [];
     updateCounter();
+    // نرسل التقرير لتلقرام بعد الأرشفة (لا نوقف الأرشفة لو فشل)
+    notifyTelegramOnArchive(entriesSnapshot, displayDate, key).catch(() => {});
   }
 
   window.endDay = async function() {
@@ -1537,91 +1506,90 @@
     } catch(e) { /* لو فشلت، تبقى الجلسة مفتوحة وتقدر تؤرشفها يدوياً */ }
   }
 
-  // ══ أرشفة مجدولة بساعة محددة ══
-  // الأدمن يحدد ساعة (مثلاً 23:00) تُخزّن بفايربيس فتنطبق على كل
-  // الأجهزة. كل جهاز فاتح التطبيق يفحص كل دقيقة: لو الوقت الحالي وصل
-  // أو تجاوز الساعة المحددة ولسا اليوم نفسه ما تأرشف، يؤرشفه بصمت.
-  // ملاحظة مهمة: هذا يشتغل فقط إذا كان جهاز واحد على الأقل فاتح
-  // التطبيق بذاك الوقت بالضبط — ما فيه سيرفر خلفي دائم يضمن التنفيذ
-  // لو كل الأجهزة مغلقة وقت الساعة المحددة.
+  // ══ أرشفة تلقائية ثابتة — نهاية الدوام 04:00 فجر ══
   //
-  // ⚠️ مهم: نخزّن { enabled, time } كبنية واضحة بدل الاعتماد على وجود
-  // قيمة وقت فقط — لأن "00:00" كقيمة افتراضية بالخانة كانت تُفسَّر
-  // بالغلط كـ"مفعّلة بمنتصف الليل" حتى لو الأدمن ما فعّلها أبداً،
-  // وهذا تسبب بأرشفة تلقائية غير مقصودة لليوم الحالي.
-  let scheduledArchiveEnabled = false;
-  let scheduledArchiveTime = null; // "HH:MM"
+  // الدوام: ١٠:٠٠ ص → ٠٤:٠٠ فجر اليوم التالي.
+  // يعني الساعات ٠٠:٠٠ → ٠٣:٥٩ تعتبر "نفس يوم العمل" وليس يوماً جديداً.
+  //
+  // مفتاح الجلسة (session key) = تاريخ بدء الدوام الفعلي:
+  //   - لو الوقت بين ٠٤:٠٠ ص و ٢٣:٥٩ → مفتاح اليوم الحالي
+  //   - لو الوقت بين ٠٠:٠٠ و ٠٣:٥٩ (فجر) → مفتاح اليوم السابق
+  // هذا يضمن إن كل إلغاءات نفس الدوام تنضم لنفس الجلسة.
+  //
+  // الأرشفة تصير عند أول جهاز يفتح التطبيق بعد الساعة ٠٤:٠٠ فجر،
+  // ومحمية بـFirebase لمنع التكرار من أكثر من جهاز.
+
+  const SHIFT_END_HOUR = 4; // 04:00 فجر — ثابت، لا يتغير
+
+  // يرجع مفتاح "يوم العمل" الحالي بدل التاريخ الميلادي المجرد.
+  // الساعات ٠٠:٠٠ → ٠٣:٥٩ تُنسب لليوم السابق (نفس الدوام).
+  function getShiftDateKey(d) {
+    const dt = d || new Date();
+    const h = dt.getHours();
+    if (h < SHIFT_END_HOUR) {
+      // الساعة الحالية قبل نهاية الدوام — ننسب لليوم السابق
+      const prev = new Date(dt);
+      prev.setDate(prev.getDate() - 1);
+      return dateKeyFor(prev);
+    }
+    return dateKeyFor(dt);
+  }
+
+  // نستبدل getTodayKey بـgetShiftDateKey في كل مكان يخص الجلسة
+  function getTodayKey() {
+    return getShiftDateKey();
+  }
+
   let scheduledArchiveInterval = null;
 
-  function listenToScheduledArchiveTime() {
-    if (!firebaseReady) return;
-    database.ref('settings/autoArchive').on('value', (snap) => {
-      const val = snap.exists() ? snap.val() : null;
-      scheduledArchiveEnabled = !!(val && val.enabled);
-      scheduledArchiveTime = (val && val.time) || null;
-      const input = document.getElementById('autoArchiveTimeInput');
-      const status = document.getElementById('autoArchiveStatus');
-      if (input && scheduledArchiveTime) input.value = scheduledArchiveTime;
-      if (status) {
-        status.textContent = (scheduledArchiveEnabled && scheduledArchiveTime)
-          ? `مفعّلة — الأرشفة كل يوم الساعة ${scheduledArchiveTime}`
-          : 'غير مفعّلة';
-      }
-    });
-  }
+  // لا يوجد إعداد من Firebase للأرشفة — الساعة ثابتة بالكود
+  function listenToScheduledArchiveTime() { /* لا شيء — الوقت ثابت */ }
+  window.saveAutoArchiveTime    = function() { showToast('الأرشفة ثابتة على 04:00 فجر', false); };
+  window.disableAutoArchiveTime = function() { showToast('الأرشفة ثابتة على 04:00 فجر', false); };
 
-  window.saveAutoArchiveTime = async function() {
-    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
-    const time = document.getElementById('autoArchiveTimeInput').value;
-    if (!time) { showToast('اختر وقتاً صحيحاً', true); return; }
-    if (!confirm(`تفعيل الأرشفة التلقائية كل يوم الساعة ${time}؟`)) return;
+  // نفحص Firebase لمنع أرشفة مزدوجة من أكثر من جهاز
+  async function getLastAutoArchiveKey() {
     try {
-      await database.ref('settings/autoArchive').set({ enabled: true, time });
-      showToast(`تم تفعيل الأرشفة التلقائية على الساعة ${time}`);
-    } catch(e) { showToast('فشل الحفظ', true); }
-  };
-
-  window.disableAutoArchiveTime = async function() {
-    if (!firebaseReady) { showToast('Firebase غير جاهز', true); return; }
-    try {
-      await database.ref('settings/autoArchive').set({ enabled: false, time: null });
-      showToast('تم تعطيل الأرشفة التلقائية');
-    } catch(e) { showToast('فشل التعطيل', true); }
-  };
-
-  // مفتاح localStorage يمنع نفس الجهاز من تكرار المحاولة عدة مرات
-  // بنفس الدقيقة/اليوم بعد ما تنجح الأرشفة فعلاً.
-  function getLastScheduledArchiveDate() {
-    return localStorage.getItem('last_scheduled_archive_date') || '';
+      const snap = await database.ref('settings/lastAutoArchiveKey').once('value');
+      return snap.exists() ? snap.val() : '';
+    } catch(e) { return ''; }
   }
-  function setLastScheduledArchiveDate(dateKey) {
-    localStorage.setItem('last_scheduled_archive_date', dateKey);
+  async function setLastAutoArchiveKey(key) {
+    try { await database.ref('settings/lastAutoArchiveKey').set(key); } catch(e) {}
   }
 
   async function checkScheduledArchiveTime() {
-    if (!scheduledArchiveEnabled || !scheduledArchiveTime || !firebaseReady) return;
+    if (!firebaseReady) return;
     if (!currentSession || !currentEntries.length) return;
 
     const now = new Date();
-    // نستخدم 24-ساعة — يفصل تلقائياً بين الصبح والعصر
-    const nowHHMM = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-    const todayKey = getTodayKey();
+    const h = now.getHours();
+    const m = now.getMinutes();
 
-    // exact match بالدقيقة بدل >= حتى لا تشتغل طوال اليوم بعد الوقت
-    // والـ lastScheduledArchiveDate يضمن ما تتكرر بنفس اليوم
-    if (nowHHMM === scheduledArchiveTime && currentSession.key === todayKey && getLastScheduledArchiveDate() !== todayKey) {
-      try {
-        await archiveCurrentSessionSilently();
-        setLastScheduledArchiveDate(todayKey);
-        showToast(`تمت الأرشفة التلقائية المجدولة (${scheduledArchiveTime})`);
-      } catch(e) { /* لو فشلت، يحاول من جديد بالفحص القادم */ }
-    }
+    // نأرشف فقط في النافذة ٠٤:٠٠ → ٠٤:٠٢ (3 دقائق كافية)
+    // وبشرط إن الجلسة المفتوحة هي "يوم الأمس" بمنطق الدوام
+    if (h !== SHIFT_END_HOUR || m > 2) return;
+
+    const sessionKey = currentSession.key;
+    const expectedKey = getShiftDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+    // الجلسة المفتوحة لازم تكون مفتاح الأمس
+    if (sessionKey !== expectedKey) return;
+
+    // نفحص Firebase — لو جهاز ثاني أرشف بالفعل، نوقف
+    const lastKey = await getLastAutoArchiveKey();
+    if (lastKey === sessionKey) return;
+
+    try {
+      await archiveCurrentSessionSilently();
+      await setLastAutoArchiveKey(sessionKey);
+      showToast('تمت الأرشفة التلقائية (٠٤:٠٠ فجر)');
+    } catch(e) { /* يحاول من جديد بالدقيقة القادمة */ }
   }
 
   function startScheduledArchiveChecker() {
     if (scheduledArchiveInterval) return;
     scheduledArchiveInterval = setInterval(checkScheduledArchiveTime, 60 * 1000);
-    checkScheduledArchiveTime(); // فحص فوري عند بدء التطبيق أيضاً
+    checkScheduledArchiveTime(); // فحص فوري عند الفتح
   }
 
   // ── Archive Browser ──
@@ -1951,6 +1919,111 @@
     `).join('');
   };
 
+  // ══ Telegram Notification ══
+  // البوت توكن والـ Chat ID يُخزَّنان بـFirebase (settings/telegram)
+  // حتى يشتغل من كل الأجهزة. عند كل أرشفة (يدوية أو تلقائية)
+  // يُرسَل تقرير الإلغاءات كرسالة نصية لقناة/مجموعة التلقرام.
+
+  async function loadTelegramSettings() {
+    if (!firebaseReady) return;
+    try {
+      const snap = await database.ref("settings/telegram").once("value");
+      if (!snap.exists()) { updateTgStatusUI(null); return; }
+      const val = snap.val();
+      const ti = document.getElementById("tgBotToken");
+      const ci = document.getElementById("tgChatId");
+      if (ti) ti.value = val.token || "";
+      if (ci) ci.value = val.chatId || "";
+      updateTgStatusUI(val);
+    } catch(e) {}
+  }
+
+  function updateTgStatusUI(val) {
+    const el = document.getElementById("tgStatus");
+    if (!el) return;
+    if (val && val.token && val.chatId) {
+      el.textContent = "مفعّل — Chat ID: " + val.chatId;
+      el.style.color = "#29b6f6";
+    } else {
+      el.textContent = "غير مفعّل";
+      el.style.color = "#999";
+    }
+  }
+
+  window.saveTelegramSettings = async function() {
+    if (!firebaseReady) { showToast("Firebase غير جاهز", true); return; }
+    const token  = (document.getElementById("tgBotToken").value || "").trim();
+    const chatId = (document.getElementById("tgChatId").value  || "").trim();
+    if (!token || !chatId) { showToast("أدخل التوكن والـ Chat ID", true); return; }
+    try {
+      await database.ref("settings/telegram").set({ token, chatId });
+      updateTgStatusUI({ token, chatId });
+      showToast("تم حفظ إعدادات تلقرام");
+    } catch(e) { showToast("فشل الحفظ", true); }
+  };
+
+  window.testTelegramSettings = async function() {
+    const token  = (document.getElementById("tgBotToken").value || "").trim();
+    const chatId = (document.getElementById("tgChatId").value  || "").trim();
+    if (!token || !chatId) { showToast("أدخل التوكن والـ Chat ID أولاً", true); return; }
+    const ok = await sendTelegramMessage(token, chatId, "✅ اختبار إشعار الأرشفة — النظام يعمل بشكل صحيح");
+    showToast(ok ? "تم إرسال رسالة الاختبار" : "فشل الإرسال — تحقق من التوكن والـ ID", !ok);
+  };
+
+  window.clearTelegramSettings = async function() {
+    if (!confirm("مسح إعدادات تلقرام؟")) return;
+    try {
+      await database.ref("settings/telegram").remove();
+      document.getElementById("tgBotToken").value = "";
+      document.getElementById("tgChatId").value = "";
+      updateTgStatusUI(null);
+      showToast("تم مسح إعدادات تلقرام");
+    } catch(e) { showToast("فشل المسح", true); }
+  };
+
+  // يرسل رسالة نصية لتلقرام — يرجع true/false
+  async function sendTelegramMessage(token, chatId, text) {
+    try {
+      const res = await fetch(
+        "https://api.telegram.org/bot" + token + "/sendMessage",
+        { method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }) }
+      );
+      const data = await res.json();
+      return !!(data && data.ok);
+    } catch(e) { return false; }
+  }
+
+  // يبني نص التقرير ويرسله لتلقرام
+  async function notifyTelegramOnArchive(entries, displayDate, sessionKey) {
+    if (!firebaseReady) return;
+    try {
+      const snap = await database.ref("settings/telegram").once("value");
+      if (!snap.exists()) return;
+      const { token, chatId } = snap.val();
+      if (!token || !chatId) return;
+      // نبني التقرير: إجمالي + تفصيل بالفرع
+      const grouped = {};
+      entries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
+      let text = "🗂 <b>تقرير الأرشفة</b>
+";
+      text += "📅 " + displayDate + " | 🔑 " + sessionKey + "
+";
+      text += "📦 إجمالي الإلغاءات: <b>" + entries.length + "</b>
+
+";
+      for (const [branch, list] of Object.entries(grouped)) {
+        text += "🏪 " + branch + " (" + list.length + ")
+";
+        list.forEach(e => { text += "  • " + e.order + (e.reason ? " — " + e.reason : "") + "
+"; });
+        text += "
+";
+      }
+      await sendTelegramMessage(token, chatId, text);
+    } catch(e) { /* لا نوقف الأرشفة بسبب فشل تلقرام */ }
+  }
   function initFirebase() {
     try {
       if (typeof firebase !== 'undefined') {
