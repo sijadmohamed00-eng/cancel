@@ -880,7 +880,7 @@
   //   2. ارفع الملف المعدّل على الاستضافة (GitHub Pages أو غيرها).
   //   3. سجل دخول كأدمن بالنظام واضغط زر "نشر تحديث جديد".
   // ══════════════════════════════════════════════════════════════════
-  const APP_VERSION = '1.6.0';
+  const APP_VERSION = '1.7.0';
 
   // إظهار رقم الإصدار الحالي تحت زر لوحة الأدمن — يساعد بمعرفة هل
   // الجهاز محدث أم لسا شغّال بنسخة قديمة.
@@ -1966,8 +1966,12 @@
     const token  = (document.getElementById("tgBotToken").value || "").trim();
     const chatId = (document.getElementById("tgChatId").value  || "").trim();
     if (!token || !chatId) { showToast("أدخل التوكن والـ Chat ID أولاً", true); return; }
-    const ok = await sendTelegramMessage(token, chatId, "✅ اختبار إشعار الأرشفة — النظام يعمل بشكل صحيح");
-    showToast(ok ? "تم إرسال رسالة الاختبار" : "فشل الإرسال — تحقق من التوكن والـ ID", !ok);
+    // نرسل ملف Word تجريبي فيه إلغاء وهمي للتأكد إن الإرسال يشتغل
+    const testEntries = [{ order: "999", branch: "اختبار", reason: "اختبار تلقرام", phone: "", timeEn: "10:00:00 ص" }];
+    const testHtml = buildReportHtml(testEntries, new Date().toLocaleDateString("ar-IQ"));
+    const testBlob = new Blob([testHtml], { type: "application/msword" });
+    const ok = await sendTelegramDocument(token, chatId, testBlob, "اختبار_تلقرام.doc", "✅ اختبار — النظام يعمل");
+    showToast(ok ? "تم إرسال ملف الاختبار لتلقرام" : "فشل الإرسال — تحقق من التوكن والـ ID", !ok);
   };
 
   window.clearTelegramSettings = async function() {
@@ -1982,6 +1986,7 @@
   };
 
   // يرسل رسالة نصية لتلقرام — يرجع true/false
+  // يرسل رسالة نصية بسيطة لتلقرام — للاختبار فقط
   async function sendTelegramMessage(token, chatId, text) {
     try {
       const res = await fetch(
@@ -1995,7 +2000,23 @@
     } catch(e) { return false; }
   }
 
-  // يبني نص التقرير ويرسله لتلقرام
+  // يرسل ملف Word (.doc) لتلقرام كـ document
+  async function sendTelegramDocument(token, chatId, blob, filename, caption) {
+    try {
+      const form = new FormData();
+      form.append("chat_id", chatId);
+      form.append("document", blob, filename);
+      if (caption) form.append("caption", caption);
+      const res = await fetch(
+        "https://api.telegram.org/bot" + token + "/sendDocument",
+        { method: "POST", body: form }
+      );
+      const data = await res.json();
+      return !!(data && data.ok);
+    } catch(e) { return false; }
+  }
+
+  // عند الأرشفة: يبني ملف Word ويرسله لتلقرام مباشرة
   async function notifyTelegramOnArchive(entries, displayDate, sessionKey) {
     if (!firebaseReady) return;
     try {
@@ -2003,27 +2024,17 @@
       if (!snap.exists()) return;
       const { token, chatId } = snap.val();
       if (!token || !chatId) return;
-      // نبني التقرير: إجمالي + تفصيل بالفرع
-      const grouped = {};
-      entries.forEach(e => { if (!grouped[e.branch]) grouped[e.branch]=[]; grouped[e.branch].push(e); });
-      let text = "🗂 <b>تقرير الأرشفة</b>
-";
-      text += "📅 " + displayDate + " | 🔑 " + sessionKey + "
-";
-      text += "📦 إجمالي الإلغاءات: <b>" + entries.length + "</b>
 
-";
-      for (const [branch, list] of Object.entries(grouped)) {
-        text += "🏪 " + branch + " (" + list.length + ")
-";
-        list.forEach(e => { text += "  • " + e.order + (e.reason ? " — " + e.reason : "") + "
-"; });
-        text += "
-";
-      }
-      await sendTelegramMessage(token, chatId, text);
+      // نبني ملف Word بنفس buildReportHtml
+      const html = buildReportHtml(entries, displayDate);
+      const blob = new Blob([html], { type: "application/msword" });
+      const filename = "\u062a\u0642\u0631\u064a\u0631_\u0627\u0644\u0627\u0644\u063a\u0627\u0621\u0627\u062a_" + sessionKey + ".doc";
+      const caption = "\uD83D\uDDC2 \u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0623\u0631\u0634\u0641\u0629\n\uD83D\uDCC5 " + displayDate + " | \u0625\u062c\u0645\u0627\u0644\u064a: " + entries.length + " \u0625\u0644\u063a\u0627\u0621";
+
+      await sendTelegramDocument(token, chatId, blob, filename, caption);
     } catch(e) { /* لا نوقف الأرشفة بسبب فشل تلقرام */ }
   }
+
   function initFirebase() {
     try {
       if (typeof firebase !== 'undefined') {
